@@ -133,7 +133,6 @@ resource "keycloak_openid_client_scope" "this" {
   realm_id    = each.value.realm
   name        = each.value.name
   description = try(each.value.description, null)
-  protocol    = each.value.protocol
 }
 
 resource "keycloak_generic_protocol_mapper" "client_scope" {
@@ -145,9 +144,15 @@ resource "keycloak_generic_protocol_mapper" "client_scope" {
   protocol        = coalesce(try(each.value.mapper.protocol, null), "openid-connect")
   protocol_mapper = each.value.mapper.protocol_mapper
 
-  consent_required = coalesce(try(each.value.mapper.consent_required, null), false)
-  consent_text     = try(each.value.mapper.consent_text, null)
-  config           = coalesce(try(each.value.mapper.config, null), {})
+  config = merge(
+    coalesce(try(each.value.mapper.config, null), {}),
+    {
+      for k, v in {
+        consentRequired = try(each.value.mapper.consent_required, null)
+        consentText     = try(each.value.mapper.consent_text, null)
+      } : k => tostring(v) if v != null
+    }
+  )
 }
 
 resource "keycloak_openid_client" "this" {
@@ -159,8 +164,8 @@ resource "keycloak_openid_client" "this" {
   access_type = upper(each.value.client_type)
   base_url    = try(each.value.base_url, null)
 
-  redirect_uris = coalesce(try(each.value.redirect_uris, null), [])
-  web_origins   = coalesce(try(each.value.web_origins, null), [])
+  valid_redirect_uris = coalesce(try(each.value.redirect_uris, null), [])
+  web_origins         = coalesce(try(each.value.web_origins, null), [])
 
   standard_flow_enabled        = coalesce(try(each.value.standard_flow_enabled, null), true)
   implicit_flow_enabled        = coalesce(try(each.value.implicit_flow_enabled, null), false)
@@ -193,7 +198,6 @@ resource "keycloak_role" "realm" {
   realm_id    = each.value.realm
   name        = each.value.name
   description = try(each.value.description, null)
-  composite   = coalesce(try(each.value.composite, null), length(each.value.composites) > 0)
 
   composite_roles = compact([
     for role_name in each.value.composites :
@@ -209,7 +213,6 @@ resource "keycloak_role" "client" {
   client_id   = keycloak_openid_client.this[each.value.client_id].id
   name        = each.value.name
   description = try(each.value.description, null)
-  composite   = coalesce(try(each.value.composite, null), length(each.value.composites) > 0)
 
   composite_roles = compact([
     for role_name in each.value.composites :

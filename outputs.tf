@@ -28,7 +28,7 @@ output "client_scopes" {
     name => {
       id       = s.id
       realm    = s.realm_id
-      protocol = s.protocol
+      protocol = local.client_scopes[name].protocol
     }
   }
 }
