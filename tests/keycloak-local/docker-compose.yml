@@ -1,0 +1,16 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      # enable health endpoints
+      KC_HEALTH_ENABLED: "true"
+      # keep management interface enabled (default), health exposed there
+      KC_HTTP_MANAGEMENT_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_PORT: "9000"
+
+    ports:
+      - "8080:8080"  # main HTTP (UI / API)
+      - "9000:9000"  # management (health)

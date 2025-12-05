@@ -1,0 +1,30 @@
+repos:
+  - repo: local
+    hooks:
+      - id: terraform-fmt
+        name: terraform fmt (docker)
+        language: system
+        entry: bash scripts/wunder-devtools-ee.sh terraform fmt -recursive
+        pass_filenames: false
+        files: \.tf$
+
+      - id: terraform-validate
+        name: terraform validate (docker)
+        language: system
+        entry: bash scripts/wunder-devtools-ee.sh bash -lc 'terraform init -backend=false -input=false && terraform validate'
+        pass_filenames: false
+        files: \.tf$
+
+      - id: terraform-tflint
+        name: tflint (docker)
+        language: system
+        entry: bash scripts/wunder-devtools-ee.sh tflint --recursive
+        pass_filenames: false
+        files: \.tf$
+
+      - id: terraform-docs
+        name: terraform-docs (docker)
+        language: system
+        entry: bash scripts/wunder-devtools-ee.sh terraform-docs markdown table --output-file README.md --output-mode replace .
+        pass_filenames: false
+        files: ^(main\.tf|variables\.tf|outputs\.tf)$
