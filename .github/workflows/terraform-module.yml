@@ -1,0 +1,49 @@
+name: Terraform Module CI
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-module:
+    name: Terraform module checks
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # 1) Checkout
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2) Install Terraform CLI
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      # 3) Format check in the module root
+      - name: Terraform fmt (check)
+        run: terraform fmt -check -recursive
+
+      # 4) Init without backend (we are testing a module, no state)
+      - name: Terraform init (module root)
+        run: terraform init -backend=false
+
+      # 5) Validate module configuration
+      - name: Terraform validate (module root)
+        run: terraform validate
+
+      # 6) Test setup like tests/keycloak-local
+      - name: Terraform validate (keycloak-local test)
+        working-directory: tests/keycloak-local
+        run: |
+          terraform init -backend=false
+          terraform validate
