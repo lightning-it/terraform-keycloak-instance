@@ -79,3 +79,28 @@ output "role_bindings" {
     }
   }
 }
+
+output "groups" {
+  description = "Map of configured groups keyed by \"<realm>/<name>\"."
+  value = {
+    for key, g in keycloak_group.this :
+    key => {
+      id     = g.id
+      realm  = g.realm_id
+      name   = g.name
+      parent = try(local.groups[key].parent, null)
+      path   = try(local.groups[key].path, null)
+      metadata = {
+        attributes = try(local.groups[key].attributes, {})
+      }
+    }
+  }
+}
+
+output "default_groups" {
+  description = "Default groups configured per realm."
+  value = {
+    for realm, ids in local.default_groups_resolved :
+    realm => ids
+  }
+}

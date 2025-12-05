@@ -110,6 +110,39 @@ locals {
       name  = rb.group_name
     } if try(rb.group_name, null) != null
   }
+
+  groups = {
+    for g in var.groups :
+    "${coalesce(try(g.realm, null), local.default_realm)}/${g.name}" => merge(g, {
+      realm      = coalesce(try(g.realm, null), local.default_realm)
+      attributes = coalesce(try(g.attributes, null), {})
+      parent     = try(g.parent, null)
+      path       = try(g.path, null)
+    })
+    if coalesce(try(g.realm, null), local.default_realm) != null
+  }
+
+  group_parents = {
+    for k, g in local.groups :
+    k => try(local.groups["${g.realm}/${g.parent}"], null)
+    if try(g.parent, null) != null
+  }
+
+  realms_for_groups = distinct([for g in local.groups : g.realm])
+
+  default_groups = {
+    for dg in var.default_groups :
+    dg.realm => dg.names
+  }
+
+  default_groups_resolved = {
+    for realm in local.realms_for_groups :
+    realm => compact([
+      for name in coalesce(try(local.default_groups[realm], null), []) :
+      try(keycloak_group.this["${realm}/${name}"].id, null)
+    ])
+    if length(coalesce(try(local.default_groups[realm], null), [])) > 0
+  }
 }
 
 resource "keycloak_realm" "this" {
@@ -289,4 +322,20 @@ resource "keycloak_group_roles" "this" {
       ]
     ])
   ))
+}
+
+resource "keycloak_group" "this" {
+  for_each = local.groups
+
+  realm_id   = each.value.realm
+  name       = each.value.name
+  attributes = each.value.attributes
+  parent_id  = try(keycloak_group.this["${each.value.realm}/${each.value.parent}"].id, null)
+}
+
+resource "keycloak_default_groups" "this" {
+  for_each = local.default_groups_resolved
+
+  realm_id  = each.key
+  group_ids = each.value
 }

@@ -7,133 +7,6 @@ scopes, and roles using the official
 This module provides a declarative, GitOps-friendly way to manage base realms,
 clients and scopes, and attach realm/client roles to users and groups.
 
-## Example usage
-
-```hcl
-terraform {
-  required_providers {
-    keycloak = {
-      source  = "keycloak/keycloak"
-      version = "~> 5.5"
-    }
-  }
-  required_version = ">= 1.6.0, < 2.0.0"
-}
-
-provider "keycloak" {
-  url           = "https://keycloak.example.com"
-  realm         = "master"
-  client_id     = "terraform"
-  client_secret = "replace-me"
-}
-
-module "keycloak_instance" {
-  source  = "lightning-it/instance/keycloak"
-  version = "1.0.0" # or the current release
-
-  realms = [
-    {
-      name         = "tier0"
-      display_name = "TIER0"
-    },
-    {
-      name                     = "tier1"
-      display_name             = "TIER1"
-      enabled                  = true
-      login_theme              = "keycloak"
-      registration_allowed     = false
-      remember_me              = true
-      login_with_email_allowed = true
-    }
-  ]
-
-  clients = [
-    {
-      client_id                    = "frontend"
-      client_type                  = "public"
-      realm                        = "tier0"
-      name                         = "Frontend SPA"
-      redirect_uris                = ["https://app.example.com/*"]
-      web_origins                  = ["+"]
-      standard_flow_enabled        = true
-      implicit_flow_enabled        = false
-      direct_access_grants_enabled = false
-      default_scopes               = ["profile", "email", "app-profile"]
-      optional_scopes              = ["address"]
-    },
-    {
-      client_id                    = "backend"
-      client_type                  = "confidential"
-      realm                        = "tier0"
-      name                         = "Backend Service"
-      service_accounts_enabled     = true
-      direct_access_grants_enabled = false
-      standard_flow_enabled        = false
-      implicit_flow_enabled        = false
-      default_scopes               = ["profile", "email"]
-    }
-  ]
-
-  client_scopes = [
-    {
-      name        = "app-profile"
-      realm       = "tier0"
-      description = "Expose app-specific profile data"
-      protocol    = "openid-connect"
-
-      mappers = [
-        {
-          name            = "app_role"
-          protocol_mapper = "oidc-usermodel-attribute-mapper"
-          config = {
-            "user.attribute"       = "app_role"
-            "claim.name"           = "app_role"
-            "jsonType.label"       = "String"
-            "id.token.claim"       = "true"
-            "access.token.claim"   = "true"
-            "userinfo.token.claim" = "true"
-          }
-        }
-      ]
-    }
-  ]
-
-  realm_roles = [
-    {
-      name        = "platform-admin"
-      realm       = "tier0"
-      description = "Platform administrator"
-    }
-  ]
-
-  client_roles = [
-    {
-      client_id   = "frontend"
-      realm       = "tier0"
-      name        = "app-reader"
-      description = "Read access to frontend app"
-    }
-  ]
-
-  role_bindings = [
-    {
-      realm       = "tier0"
-      username    = "alice"
-      realm_roles = ["platform-admin"]
-    },
-    {
-      realm        = "tier0"
-      group_name   = "developers"
-      client_roles = {
-        frontend = ["app-reader"]
-      }
-    }
-  ]
-}
-```
-
-The tables below are generated automatically by `terraform-docs`.
-
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -156,7 +29,9 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [keycloak_default_groups.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/default_groups) | resource |
 | [keycloak_generic_protocol_mapper.client_scope](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/generic_protocol_mapper) | resource |
+| [keycloak_group.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/group) | resource |
 | [keycloak_group_roles.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/group_roles) | resource |
 | [keycloak_openid_client.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client) | resource |
 | [keycloak_openid_client_default_scopes.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client_default_scopes) | resource |
@@ -176,6 +51,8 @@ No modules.
 | <a name="input_client_roles"></a> [client\_roles](#input\_client\_roles) | Client-specific roles to configure. | <pre>list(object({<br/>    client_id   = string<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    composite   = optional(bool)<br/>    composites  = optional(list(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_client_scopes"></a> [client\_scopes](#input\_client\_scopes) | List of reusable client scopes. | <pre>list(object({<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    protocol    = optional(string)<br/>    mappers = optional(list(object({<br/>      name             = string<br/>      protocol         = optional(string)<br/>      protocol_mapper  = string<br/>      consent_required = optional(bool)<br/>      consent_text     = optional(string)<br/>      config           = optional(map(string))<br/>    })))<br/>  }))</pre> | `[]` | no |
 | <a name="input_clients"></a> [clients](#input\_clients) | List of Keycloak clients to configure for this instance. | <pre>list(object({<br/>    client_id                    = string<br/>    client_type                  = string<br/>    name                         = optional(string)<br/>    realm                        = optional(string)<br/>    redirect_uris                = optional(list(string))<br/>    web_origins                  = optional(list(string))<br/>    base_url                     = optional(string)<br/>    standard_flow_enabled        = optional(bool)<br/>    implicit_flow_enabled        = optional(bool)<br/>    direct_access_grants_enabled = optional(bool)<br/>    service_accounts_enabled     = optional(bool)<br/>    frontchannel_logout_enabled  = optional(bool)<br/>    default_scopes               = optional(list(string))<br/>    optional_scopes              = optional(list(string))<br/>  }))</pre> | `[]` | no |
+| <a name="input_default_groups"></a> [default\_groups](#input\_default\_groups) | Default groups to assign to new users per realm. | <pre>list(object({<br/>    realm = string<br/>    names = list(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_groups"></a> [groups](#input\_groups) | List of Keycloak groups to create, including optional attributes and hierarchy. | <pre>list(object({<br/>    name       = string<br/>    realm      = optional(string)<br/>    parent     = optional(string)<br/>    attributes = optional(map(list(string)))<br/>    path       = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_realm_roles"></a> [realm\_roles](#input\_realm\_roles) | Realm-level roles to configure. | <pre>list(object({<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    composite   = optional(bool)<br/>    composites  = optional(list(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_realms"></a> [realms](#input\_realms) | List of Keycloak realms to manage with this module. | <pre>list(object({<br/>    # Required<br/>    name = string<br/><br/>    # Optional fields — handled with try()/coalesce() in main.tf<br/>    display_name             = optional(string)<br/>    enabled                  = optional(bool)<br/>    login_theme              = optional(string)<br/>    registration_allowed     = optional(bool)<br/>    remember_me              = optional(bool)<br/>    login_with_email_allowed = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_role_bindings"></a> [role\_bindings](#input\_role\_bindings) | Role bindings to users and groups. | <pre>list(object({<br/>    realm        = string<br/>    user_id      = optional(string)<br/>    username     = optional(string)<br/>    group_id     = optional(string)<br/>    group_name   = optional(string)<br/>    realm_roles  = optional(list(string))<br/>    client_roles = optional(map(list(string)))<br/>  }))</pre> | `[]` | no |
@@ -187,6 +64,8 @@ No modules.
 | <a name="output_client_roles"></a> [client\_roles](#output\_client\_roles) | Map of configured client roles keyed by "<client\_id>:<role\_name>". |
 | <a name="output_client_scopes"></a> [client\_scopes](#output\_client\_scopes) | Map of configured client scopes keyed by scope name. |
 | <a name="output_clients"></a> [clients](#output\_clients) | Map of configured clients keyed by client\_id. |
+| <a name="output_default_groups"></a> [default\_groups](#output\_default\_groups) | Default groups configured per realm. |
+| <a name="output_groups"></a> [groups](#output\_groups) | Map of configured groups keyed by "<realm>/<name>". |
 | <a name="output_realm_roles"></a> [realm\_roles](#output\_realm\_roles) | Map of configured realm roles keyed by "<realm>:<role\_name>". |
 | <a name="output_realms"></a> [realms](#output\_realms) | Map of managed realms, keyed by realm name. |
 | <a name="output_role_bindings"></a> [role\_bindings](#output\_role\_bindings) | Applied role bindings for users and groups. |

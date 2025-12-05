@@ -99,3 +99,26 @@ variable "role_bindings" {
 
   default = []
 }
+
+variable "groups" {
+  description = "List of Keycloak groups to create, including optional attributes and hierarchy."
+  type = list(object({
+    name       = string
+    realm      = optional(string)
+    parent     = optional(string)
+    attributes = optional(map(list(string)))
+    path       = optional(string)
+  }))
+
+  default = []
+}
+
+variable "default_groups" {
+  description = "Default groups to assign to new users per realm."
+  type = list(object({
+    realm = string
+    names = list(string)
+  }))
+
+  default = []
+}
