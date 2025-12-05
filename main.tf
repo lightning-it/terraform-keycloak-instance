@@ -57,6 +57,59 @@ locals {
     for k, v in local.clients :
     k => v if length(coalesce(try(v.optional_scopes, null), [])) > 0
   }
+
+  realm_roles = {
+    for r in var.realm_roles :
+    "${coalesce(try(r.realm, null), local.default_realm)}:${r.name}" => merge(r, {
+      realm      = coalesce(try(r.realm, null), local.default_realm)
+      composites = coalesce(try(r.composites, null), [])
+    })
+    if coalesce(try(r.realm, null), local.default_realm) != null
+  }
+
+  client_roles = {
+    for r in var.client_roles :
+    "${coalesce(try(r.realm, null), try(local.clients[r.client_id].realm, null), local.default_realm)}:${r.client_id}:${r.name}" => merge(r, {
+      realm      = coalesce(try(r.realm, null), try(local.clients[r.client_id].realm, null), local.default_realm)
+      composites = coalesce(try(r.composites, null), [])
+    })
+    if coalesce(try(r.realm, null), try(local.clients[r.client_id].realm, null), local.default_realm) != null
+  }
+
+  role_bindings = [
+    for rb in var.role_bindings :
+    merge(rb, {
+      realm        = rb.realm
+      realm_roles  = coalesce(try(rb.realm_roles, null), [])
+      client_roles = coalesce(try(rb.client_roles, null), {})
+    })
+  ]
+
+  user_role_bindings = [
+    for rb in local.role_bindings :
+    rb if try(rb.user_id, null) != null || try(rb.username, null) != null
+  ]
+
+  group_role_bindings = [
+    for rb in local.role_bindings :
+    rb if try(rb.group_id, null) != null || try(rb.group_name, null) != null
+  ]
+
+  user_lookup = {
+    for rb in local.user_role_bindings :
+    "${rb.realm}:${rb.username}" => {
+      realm    = rb.realm
+      username = rb.username
+    } if try(rb.username, null) != null
+  }
+
+  group_lookup = {
+    for rb in local.group_role_bindings :
+    "${rb.realm}:${rb.group_name}" => {
+      realm = rb.realm
+      name  = rb.group_name
+    } if try(rb.group_name, null) != null
+  }
 }
 
 resource "keycloak_realm" "this" {
@@ -132,4 +185,105 @@ resource "keycloak_openid_client_optional_scopes" "this" {
   client_id = keycloak_openid_client.this[each.key].id
 
   optional_scopes = coalesce(try(each.value.optional_scopes, null), [])
+}
+
+resource "keycloak_role" "realm" {
+  for_each = local.realm_roles
+
+  realm_id    = each.value.realm
+  name        = each.value.name
+  description = try(each.value.description, null)
+  composite   = coalesce(try(each.value.composite, null), length(each.value.composites) > 0)
+
+  composite_roles = compact([
+    for role_name in each.value.composites :
+    try(keycloak_role.realm["${each.value.realm}:${role_name}"].id, null)
+    if role_name != each.value.name
+  ])
+}
+
+resource "keycloak_role" "client" {
+  for_each = local.client_roles
+
+  realm_id    = each.value.realm
+  client_id   = keycloak_openid_client.this[each.value.client_id].id
+  name        = each.value.name
+  description = try(each.value.description, null)
+  composite   = coalesce(try(each.value.composite, null), length(each.value.composites) > 0)
+
+  composite_roles = compact([
+    for role_name in each.value.composites :
+    try(keycloak_role.client["${each.value.realm}:${each.value.client_id}:${role_name}"].id, null)
+    if role_name != each.value.name
+  ])
+}
+
+data "keycloak_user" "by_username" {
+  for_each = local.user_lookup
+
+  realm_id = each.value.realm
+  username = each.value.username
+}
+
+data "keycloak_group" "by_name" {
+  for_each = local.group_lookup
+
+  realm_id = each.value.realm
+  name     = each.value.name
+}
+
+resource "keycloak_user_roles" "this" {
+  for_each = {
+    for idx, rb in local.user_role_bindings :
+    "${rb.realm}:${coalesce(try(rb.user_id, null), try(rb.username, null), idx)}" => rb
+  }
+
+  realm_id = each.value.realm
+  user_id = coalesce(
+    try(each.value.user_id, null),
+    try(data.keycloak_user.by_username["${each.value.realm}:${each.value.username}"].id, null),
+    ""
+  )
+
+  role_ids = compact(concat(
+    [
+      for role_name in coalesce(try(each.value.realm_roles, null), []) :
+      try(keycloak_role.realm["${each.value.realm}:${role_name}"].id, null)
+    ],
+    flatten([
+      for client_id, roles in coalesce(try(each.value.client_roles, null), {}) :
+      [
+        for role_name in roles :
+        try(keycloak_role.client["${each.value.realm}:${client_id}:${role_name}"].id, null)
+      ]
+    ])
+  ))
+}
+
+resource "keycloak_group_roles" "this" {
+  for_each = {
+    for idx, rb in local.group_role_bindings :
+    "${rb.realm}:${coalesce(try(rb.group_id, null), try(rb.group_name, null), idx)}" => rb
+  }
+
+  realm_id = each.value.realm
+  group_id = coalesce(
+    try(each.value.group_id, null),
+    try(data.keycloak_group.by_name["${each.value.realm}:${each.value.group_name}"].id, null),
+    ""
+  )
+
+  role_ids = compact(concat(
+    [
+      for role_name in coalesce(try(each.value.realm_roles, null), []) :
+      try(keycloak_role.realm["${each.value.realm}:${role_name}"].id, null)
+    ],
+    flatten([
+      for client_id, roles in coalesce(try(each.value.client_roles, null), {}) :
+      [
+        for role_name in roles :
+        try(keycloak_role.client["${each.value.realm}:${client_id}:${role_name}"].id, null)
+      ]
+    ])
+  ))
 }

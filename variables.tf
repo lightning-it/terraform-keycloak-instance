@@ -57,3 +57,45 @@ variable "client_scopes" {
 
   default = []
 }
+
+variable "realm_roles" {
+  description = "Realm-level roles to configure."
+  type = list(object({
+    name        = string
+    realm       = optional(string)
+    description = optional(string)
+    composite   = optional(bool)
+    composites  = optional(list(string))
+  }))
+
+  default = []
+}
+
+variable "client_roles" {
+  description = "Client-specific roles to configure."
+  type = list(object({
+    client_id   = string
+    name        = string
+    realm       = optional(string)
+    description = optional(string)
+    composite   = optional(bool)
+    composites  = optional(list(string))
+  }))
+
+  default = []
+}
+
+variable "role_bindings" {
+  description = "Role bindings to users and groups."
+  type = list(object({
+    realm        = string
+    user_id      = optional(string)
+    username     = optional(string)
+    group_id     = optional(string)
+    group_name   = optional(string)
+    realm_roles  = optional(list(string))
+    client_roles = optional(map(list(string)))
+  }))
+
+  default = []
+}

@@ -102,6 +102,38 @@ module "keycloak_instance" {
       ]
     }
   ]
+
+  realm_roles = [
+    {
+      name        = "platform-admin"
+      realm       = "tier0"
+      description = "Platform administrator"
+    }
+  ]
+
+  client_roles = [
+    {
+      client_id   = "frontend"
+      realm       = "tier0"
+      name        = "app-reader"
+      description = "Read access to frontend app"
+    }
+  ]
+
+  role_bindings = [
+    {
+      realm       = "tier0"
+      username    = "alice"
+      realm_roles = ["platform-admin"]
+    },
+    {
+      realm        = "tier0"
+      group_name   = "developers"
+      client_roles = {
+        frontend = ["app-reader"]
+      }
+    }
+  ]
 }
 ```
 
