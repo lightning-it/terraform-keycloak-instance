@@ -32,9 +32,9 @@ provider "keycloak" {
   client_secret = "replace-me"
 }
 
-module "keycloak_config" {
-  source  = "lightning-it/config/keycloak"
-  version = "1.0.0" # or whatever semantic-release created
+module "keycloak_instance" {
+  source  = "lightning-it/instance/keycloak"
+  version = "1.0.0" # or the current release
 
   realms = [
     {
@@ -49,6 +49,57 @@ module "keycloak_config" {
       registration_allowed     = false
       remember_me              = true
       login_with_email_allowed = true
+    }
+  ]
+
+  clients = [
+    {
+      client_id                 = "frontend"
+      client_type               = "public"
+      realm                     = "tier0"
+      name                      = "Frontend SPA"
+      redirect_uris             = ["https://app.example.com/*"]
+      web_origins               = ["+"]
+      standard_flow_enabled     = true
+      implicit_flow_enabled     = false
+      direct_access_grants_enabled = false
+      default_scopes            = ["profile", "email", "app-profile"]
+      optional_scopes           = ["address"]
+    },
+    {
+      client_id                    = "backend"
+      client_type                  = "confidential"
+      realm                        = "tier0"
+      name                         = "Backend Service"
+      service_accounts_enabled     = true
+      direct_access_grants_enabled = false
+      standard_flow_enabled        = false
+      implicit_flow_enabled        = false
+      default_scopes               = ["profile", "email"]
+    }
+  ]
+
+  client_scopes = [
+    {
+      name        = "app-profile"
+      realm       = "tier0"
+      description = "Expose app-specific profile data"
+      protocol    = "openid-connect"
+
+      mappers = [
+        {
+          name            = "app_role"
+          protocol_mapper = "oidc-usermodel-attribute-mapper"
+          config = {
+            "user.attribute"       = "app_role"
+            "claim.name"           = "app_role"
+            "jsonType.label"       = "String"
+            "id.token.claim"       = "true"
+            "access.token.claim"   = "true"
+            "userinfo.token.claim" = "true"
+          }
+        }
+      ]
     }
   ]
 }
