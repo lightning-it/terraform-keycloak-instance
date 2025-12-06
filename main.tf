@@ -143,6 +143,26 @@ locals {
     ])
     if length(coalesce(try(local.default_groups[realm], null), [])) > 0
   }
+
+  users = {
+    for u in var.users :
+    "${coalesce(try(u.realm, null), local.default_realm)}/${u.username}" => merge(u, {
+      realm      = coalesce(try(u.realm, null), local.default_realm)
+      enabled    = coalesce(try(u.enabled, null), true)
+      attributes = coalesce(try(u.attributes, null), {})
+    })
+    if coalesce(try(u.realm, null), local.default_realm) != null
+  }
+
+  service_accounts = {
+    for sa in var.service_accounts :
+    "${coalesce(try(sa.realm, null), try(local.clients[sa.client_id].realm, null), local.default_realm)}/${sa.client_id}" => merge(sa, {
+      realm      = coalesce(try(sa.realm, null), try(local.clients[sa.client_id].realm, null), local.default_realm)
+      enabled    = coalesce(try(sa.enabled, null), true)
+      attributes = coalesce(try(sa.attributes, null), {})
+    })
+    if coalesce(try(sa.realm, null), try(local.clients[sa.client_id].realm, null), local.default_realm) != null
+  }
 }
 
 resource "keycloak_realm" "this" {
@@ -203,8 +223,11 @@ resource "keycloak_openid_client" "this" {
   standard_flow_enabled        = coalesce(try(each.value.standard_flow_enabled, null), true)
   implicit_flow_enabled        = coalesce(try(each.value.implicit_flow_enabled, null), false)
   direct_access_grants_enabled = coalesce(try(each.value.direct_access_grants_enabled, null), true)
-  service_accounts_enabled     = coalesce(try(each.value.service_accounts_enabled, null), false)
-  frontchannel_logout_enabled  = coalesce(try(each.value.frontchannel_logout_enabled, null), true)
+  service_accounts_enabled = coalesce(
+    try(each.value.service_accounts_enabled, null),
+    contains(keys(local.service_accounts), "${each.value.realm}/${each.value.client_id}")
+  )
+  frontchannel_logout_enabled = coalesce(try(each.value.frontchannel_logout_enabled, null), true)
 }
 
 resource "keycloak_openid_client_default_scopes" "this" {
@@ -338,4 +361,49 @@ resource "keycloak_default_groups" "this" {
 
   realm_id  = each.key
   group_ids = each.value
+}
+
+resource "keycloak_user" "this" {
+  for_each = local.users
+
+  realm_id         = each.value.realm
+  username         = each.value.username
+  enabled          = each.value.enabled
+  email            = try(each.value.email, null)
+  first_name       = try(each.value.first_name, null)
+  last_name        = try(each.value.last_name, null)
+  attributes       = each.value.attributes
+  required_actions = coalesce(try(each.value.required_actions, null), [])
+
+  dynamic "initial_password" {
+    for_each = try(each.value.initial_password, null) != null ? [each.value.initial_password] : []
+    content {
+      value     = initial_password.value
+      temporary = coalesce(try(initial_password.temporary, null), true)
+    }
+  }
+}
+
+resource "keycloak_user_roles" "service_accounts" {
+  for_each = {
+    for key, sa in local.service_accounts :
+    key => sa
+  }
+
+  realm_id = each.value.realm
+  user_id  = keycloak_openid_client.this[each.value.client_id].service_account_user_id
+
+  role_ids = compact(concat(
+    [
+      for role_name in coalesce(try(each.value.realm_roles, null), []) :
+      try(keycloak_role.realm["${each.value.realm}:${role_name}"].id, null)
+    ],
+    flatten([
+      for client_id, roles in coalesce(try(each.value.client_roles, null), {}) :
+      [
+        for role_name in roles :
+        try(keycloak_role.client["${each.value.realm}:${client_id}:${role_name}"].id, null)
+      ]
+    ])
+  ))
 }

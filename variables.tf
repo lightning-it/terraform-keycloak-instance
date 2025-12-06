@@ -122,3 +122,37 @@ variable "default_groups" {
 
   default = []
 }
+
+variable "users" {
+  description = "List of users to seed in Keycloak, including credentials and attributes."
+  type = list(object({
+    username         = string
+    realm            = optional(string)
+    enabled          = optional(bool)
+    email            = optional(string)
+    first_name       = optional(string)
+    last_name        = optional(string)
+    attributes       = optional(map(list(string)))
+    required_actions = optional(list(string))
+    initial_password = optional(object({
+      value     = string
+      temporary = optional(bool)
+    }))
+  }))
+
+  default = []
+}
+
+variable "service_accounts" {
+  description = "Configuration for client service accounts, including optional role assignments."
+  type = list(object({
+    client_id    = string
+    realm        = optional(string)
+    enabled      = optional(bool)
+    attributes   = optional(map(list(string)))
+    realm_roles  = optional(list(string))
+    client_roles = optional(map(list(string)))
+  }))
+
+  default = []
+}

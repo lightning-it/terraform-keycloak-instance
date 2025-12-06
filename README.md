@@ -1,11 +1,186 @@
 # terraform-keycloak-instance
 
 Terraform module for configuring a full Keycloak instance with realms, clients,
-scopes, and roles using the official
+scopes, roles, groups, users, and service accounts using the official
 [keycloak/keycloak](https://registry.terraform.io/providers/keycloak/keycloak/latest) provider.
 
 This module provides a declarative, GitOps-friendly way to manage base realms,
-clients and scopes, and attach realm/client roles to users and groups.
+clients and scopes, attach realm/client roles to users and groups, seed users,
+and configure client service accounts.
+
+## Example usage
+
+```hcl
+terraform {
+  required_providers {
+    keycloak = {
+      source  = "keycloak/keycloak"
+      version = "~> 5.5"
+    }
+  }
+  required_version = ">= 1.6.0, < 2.0.0"
+}
+
+provider "keycloak" {
+  url           = "https://keycloak.example.com"
+  realm         = "master"
+  client_id     = "terraform"
+  client_secret = "replace-me"
+}
+
+module "keycloak_instance" {
+  source  = "lightning-it/instance/keycloak"
+  version = "1.0.0" # or the current release
+
+  realms = [
+    {
+      name         = "tier0"
+      display_name = "TIER0"
+    }
+  ]
+
+  clients = [
+    {
+      client_id                    = "frontend"
+      client_type                  = "public"
+      realm                        = "tier0"
+      name                         = "Frontend SPA"
+      redirect_uris                = ["https://app.example.com/*"]
+      web_origins                  = ["+"]
+      standard_flow_enabled        = true
+      implicit_flow_enabled        = false
+      direct_access_grants_enabled = false
+      default_scopes               = ["profile", "email", "app-profile"]
+      optional_scopes              = ["address"]
+    },
+    {
+      client_id                    = "backend-api"
+      client_type                  = "confidential"
+      realm                        = "tier0"
+      name                         = "Backend API"
+      service_accounts_enabled     = true
+      direct_access_grants_enabled = false
+      standard_flow_enabled        = false
+      implicit_flow_enabled        = false
+      default_scopes               = ["profile", "email"]
+    }
+  ]
+
+  client_scopes = [
+    {
+      name        = "app-profile"
+      realm       = "tier0"
+      description = "Expose app-specific profile data"
+      protocol    = "openid-connect"
+
+      mappers = [
+        {
+          name            = "app_role"
+          protocol_mapper = "oidc-usermodel-attribute-mapper"
+          config = {
+            "user.attribute"       = "app_role"
+            "claim.name"           = "app_role"
+            "jsonType.label"       = "String"
+            "id.token.claim"       = "true"
+            "access.token.claim"   = "true"
+            "userinfo.token.claim" = "true"
+          }
+        }
+      ]
+    }
+  ]
+
+  realm_roles = [
+    {
+      name        = "platform-admin"
+      realm       = "tier0"
+      description = "Platform administrator"
+    },
+    {
+      name        = "platform-service"
+      realm       = "tier0"
+      description = "Platform service role"
+    }
+  ]
+
+  client_roles = [
+    {
+      client_id   = "frontend"
+      realm       = "tier0"
+      name        = "app-reader"
+      description = "Read access to frontend app"
+    }
+  ]
+
+  role_bindings = [
+    {
+      realm       = "tier0"
+      username    = "alice"
+      realm_roles = ["platform-admin"]
+    },
+    {
+      realm        = "tier0"
+      group_name   = "developers"
+      client_roles = {
+        frontend = ["app-reader"]
+      }
+    }
+  ]
+
+  groups = [
+    {
+      name   = "admins"
+      realm  = "tier0"
+      attributes = {
+        team = ["platform"]
+      }
+    },
+    {
+      name   = "users"
+      realm  = "tier0"
+    },
+    {
+      name   = "developers"
+      realm  = "tier0"
+      parent = "users"
+    }
+  ]
+
+  default_groups = [
+    {
+      realm = "tier0"
+      names = ["users"]
+    }
+  ]
+
+  users = [
+    {
+      username   = "alice"
+      realm      = "tier0"
+      email      = "alice@example.com"
+      first_name = "Alice"
+      last_name  = "Admin"
+      enabled    = true
+      attributes = {
+        department = ["platform"]
+      }
+      initial_password = {
+        value     = "ChangeMe123!"
+        temporary = true
+      }
+    }
+  ]
+
+  service_accounts = [
+    {
+      client_id   = "backend-api"
+      realm       = "tier0"
+      enabled     = true
+      realm_roles = ["platform-service"]
+    }
+  ]
+}
+```
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -40,6 +215,8 @@ No modules.
 | [keycloak_realm.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/realm) | resource |
 | [keycloak_role.client](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/role) | resource |
 | [keycloak_role.realm](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/role) | resource |
+| [keycloak_user.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/user) | resource |
+| [keycloak_user_roles.service_accounts](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/user_roles) | resource |
 | [keycloak_user_roles.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/user_roles) | resource |
 | [keycloak_group.by_name](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/data-sources/group) | data source |
 | [keycloak_user.by_username](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/data-sources/user) | data source |
@@ -56,6 +233,8 @@ No modules.
 | <a name="input_realm_roles"></a> [realm\_roles](#input\_realm\_roles) | Realm-level roles to configure. | <pre>list(object({<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    composite   = optional(bool)<br/>    composites  = optional(list(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_realms"></a> [realms](#input\_realms) | List of Keycloak realms to manage with this module. | <pre>list(object({<br/>    # Required<br/>    name = string<br/><br/>    # Optional fields — handled with try()/coalesce() in main.tf<br/>    display_name             = optional(string)<br/>    enabled                  = optional(bool)<br/>    login_theme              = optional(string)<br/>    registration_allowed     = optional(bool)<br/>    remember_me              = optional(bool)<br/>    login_with_email_allowed = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_role_bindings"></a> [role\_bindings](#input\_role\_bindings) | Role bindings to users and groups. | <pre>list(object({<br/>    realm        = string<br/>    user_id      = optional(string)<br/>    username     = optional(string)<br/>    group_id     = optional(string)<br/>    group_name   = optional(string)<br/>    realm_roles  = optional(list(string))<br/>    client_roles = optional(map(list(string)))<br/>  }))</pre> | `[]` | no |
+| <a name="input_service_accounts"></a> [service\_accounts](#input\_service\_accounts) | Configuration for client service accounts, including optional role assignments. | <pre>list(object({<br/>    client_id    = string<br/>    realm        = optional(string)<br/>    enabled      = optional(bool)<br/>    attributes   = optional(map(list(string)))<br/>    realm_roles  = optional(list(string))<br/>    client_roles = optional(map(list(string)))<br/>  }))</pre> | `[]` | no |
+| <a name="input_users"></a> [users](#input\_users) | List of users to seed in Keycloak, including credentials and attributes. | <pre>list(object({<br/>    username          = string<br/>    realm             = optional(string)<br/>    enabled           = optional(bool)<br/>    email             = optional(string)<br/>    first_name        = optional(string)<br/>    last_name         = optional(string)<br/>    attributes        = optional(map(list(string)))<br/>    required_actions  = optional(list(string))<br/>    initial_password = optional(object({<br/>      value     = string<br/>      temporary = optional(bool)<br/>    }))<br/>  }))</pre> | `[]` | no |
 
 ## Outputs
 
@@ -69,4 +248,6 @@ No modules.
 | <a name="output_realm_roles"></a> [realm\_roles](#output\_realm\_roles) | Map of configured realm roles keyed by "<realm>:<role\_name>". |
 | <a name="output_realms"></a> [realms](#output\_realms) | Map of managed realms, keyed by realm name. |
 | <a name="output_role_bindings"></a> [role\_bindings](#output\_role\_bindings) | Applied role bindings for users and groups. |
+| <a name="output_service_accounts"></a> [service\_accounts](#output\_service\_accounts) | Map of client service account users keyed by "<realm>/<client\_id>". |
+| <a name="output_users"></a> [users](#output\_users) | Map of seeded users keyed by "<realm>/<username>". |
 <!-- END_TF_DOCS -->

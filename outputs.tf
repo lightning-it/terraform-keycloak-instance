@@ -104,3 +104,27 @@ output "default_groups" {
     realm => ids
   }
 }
+
+output "users" {
+  description = "Map of seeded users keyed by \"<realm>/<username>\"."
+  value = {
+    for key, u in keycloak_user.this :
+    key => {
+      id       = u.id
+      realm    = u.realm_id
+      username = u.username
+    }
+  }
+}
+
+output "service_accounts" {
+  description = "Map of client service account users keyed by \"<realm>/<client_id>\"."
+  value = {
+    for key, sa in local.service_accounts :
+    key => {
+      realm     = sa.realm
+      client_id = sa.client_id
+      user_id   = keycloak_openid_client.this[sa.client_id].service_account_user_id
+    }
+  }
+}
