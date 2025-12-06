@@ -242,6 +242,16 @@ output "session_settings" {
   }
 }
 
+output "custom_theme_hooks" {
+  description = "Custom theme hook metadata passed to the module."
+  value       = var.custom_theme_hooks
+}
+
+output "event_listener_hooks" {
+  description = "Event listener hook metadata passed to the module."
+  value       = var.event_listener_hooks
+}
+
 output "token_settings" {
   description = "Summary of token timeout settings per realm."
   value = {

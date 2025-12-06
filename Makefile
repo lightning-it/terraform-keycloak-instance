@@ -1,7 +1,7 @@
-KEYCLOAK_COMPOSE := tests/keycloak-local/docker-compose.yml
-KEYCLOAK_TEST_DIR := tests/keycloak-local
+KEYCLOAK_COMPOSE := tests/keycloak-smoke/docker-compose.yml
+KEYCLOAK_TEST_DIRS := tests/keycloak-smoke tests/keycloak-advanced tests/keycloak-empty
 
-.PHONY: keycloak-up keycloak-down wait-keycloak test-local
+.PHONY: keycloak-up keycloak-down wait-keycloak test-keycloak
 
 keycloak-up:
 	docker compose -f $(KEYCLOAK_COMPOSE) up -d
@@ -17,8 +17,15 @@ wait-keycloak:
 	done; \
 	echo " Keycloak is ready."
 
-test-local: keycloak-up wait-keycloak
-	# Terraform init + apply using wunder-devtools-ee
-	bash scripts/wunder-devtools-ee.sh terraform -chdir=$(KEYCLOAK_TEST_DIR) init -input=false
-	bash scripts/wunder-devtools-ee.sh terraform -chdir=$(KEYCLOAK_TEST_DIR) apply -auto-approve -input=false
-	$(MAKE) keycloak-down
+test-keycloak:
+	@set -e; \
+	trap '$(MAKE) keycloak-down >/dev/null 2>&1 || true' EXIT; \
+	$(MAKE) keycloak-down >/dev/null 2>&1 || true; \
+	$(MAKE) keycloak-up; \
+	$(MAKE) wait-keycloak; \
+	for dir in $(KEYCLOAK_TEST_DIRS); do \
+		echo "=== Running $$dir ==="; \
+		rm -rf $$dir/.terraform $$dir/terraform.tfstate $$dir/terraform.tfstate.backup $$dir/.terraform.lock.hcl; \
+		bash scripts/wunder-devtools-ee.sh terraform -chdir=$$dir init -input=false || exit $$?; \
+		bash scripts/wunder-devtools-ee.sh terraform -chdir=$$dir apply -auto-approve -input=false || exit $$?; \
+	done

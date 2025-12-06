@@ -29,4 +29,4 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
-tests/keycloak-local/.terraform.lock.hcl
+tests/*/.terraform.lock.hcl

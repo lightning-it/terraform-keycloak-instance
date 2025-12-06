@@ -100,7 +100,7 @@ locals {
     "${rb.realm}:${rb.username}" => {
       realm    = rb.realm
       username = rb.username
-    } if try(rb.username, null) != null
+    } if try(rb.username, null) != null && !contains(keys(local.users), "${rb.realm}/${rb.username}")
   }
 
   group_lookup = {
@@ -108,7 +108,7 @@ locals {
     "${rb.realm}:${rb.group_name}" => {
       realm = rb.realm
       name  = rb.group_name
-    } if try(rb.group_name, null) != null
+    } if try(rb.group_name, null) != null && !contains(keys(local.groups), "${rb.realm}/${rb.group_name}")
   }
 
   groups = {
@@ -120,12 +120,6 @@ locals {
       path       = try(g.path, null)
     })
     if coalesce(try(g.realm, null), local.default_realm) != null
-  }
-
-  group_parents = {
-    for k, g in local.groups :
-    k => try(local.groups["${g.realm}/${g.parent}"], null)
-    if try(g.parent, null) != null
   }
 
   realms_for_groups = distinct([for g in local.groups : g.realm])
@@ -239,21 +233,9 @@ locals {
     l.realm => l
   }
 
-  custom_theme_hooks = {
-    for h in var.custom_theme_hooks :
-    "${coalesce(try(h.realm, null), local.default_realm)}/${h.name}" => h
-    if coalesce(try(h.realm, null), local.default_realm) != null
-  }
-
   event_settings = {
     for e in var.event_settings :
     e.realm => e
-  }
-
-  event_listener_hooks = {
-    for h in var.event_listener_hooks :
-    "${coalesce(try(h.realm, null), local.default_realm)}/${h.name}" => h
-    if coalesce(try(h.realm, null), local.default_realm) != null
   }
 
   session_settings = {
@@ -286,10 +268,10 @@ resource "keycloak_realm" "this" {
   # Optional fields with sane defaults
   enabled                  = coalesce(try(each.value.enabled, null), true)
   display_name             = try(each.value.display_name, null)
-  login_theme              = coalesce(try(local.theme_settings[each.key].login_theme, null), try(each.value.login_theme, null))
-  account_theme            = coalesce(try(local.theme_settings[each.key].account_theme, null), try(each.value.account_theme, null))
-  admin_theme              = coalesce(try(local.theme_settings[each.key].admin_theme, null), try(each.value.admin_theme, null))
-  email_theme              = coalesce(try(local.theme_settings[each.key].email_theme, null), try(each.value.email_theme, null))
+  login_theme              = try(coalesce(try(local.theme_settings[each.key].login_theme, null), try(each.value.login_theme, null)), null)
+  account_theme            = try(coalesce(try(local.theme_settings[each.key].account_theme, null), try(each.value.account_theme, null)), null)
+  admin_theme              = try(coalesce(try(local.theme_settings[each.key].admin_theme, null), try(each.value.admin_theme, null)), null)
+  email_theme              = try(coalesce(try(local.theme_settings[each.key].email_theme, null), try(each.value.email_theme, null)), null)
   registration_allowed     = coalesce(try(local.auth_flow_settings[each.key].registration_allowed, null), coalesce(try(each.value.registration_allowed, null), false))
   remember_me              = coalesce(try(local.auth_flow_settings[each.key].remember_me, null), coalesce(try(each.value.remember_me, null), true))
   login_with_email_allowed = coalesce(try(local.auth_flow_settings[each.key].login_with_email_allowed, null), coalesce(try(each.value.login_with_email_allowed, null), true))
@@ -381,27 +363,26 @@ resource "keycloak_realm_events" "this" {
 resource "keycloak_ldap_user_federation" "this" {
   for_each = local.ldap_user_federations
 
-  realm_id                      = keycloak_realm.this[each.value.realm].id
-  name                          = each.value.name
-  enabled                       = coalesce(try(each.value.enabled, null), true)
-  priority                      = try(each.value.priority, null)
-  edit_mode                     = try(each.value.edit_mode, null)
-  import_enabled                = try(each.value.import_enabled, null)
-  sync_registrations            = try(each.value.sync_registrations, null)
-  vendor                        = try(each.value.vendor, null)
-  username_ldap_attribute       = try(each.value.username_ldap_attribute, null)
-  rdn_ldap_attribute            = try(each.value.rdn_ldap_attribute, null)
-  uuid_ldap_attribute           = try(each.value.uuid_ldap_attribute, null)
-  user_object_classes           = try(each.value.user_object_classes, null)
-  connection_url                = each.value.connection_url
-  users_dn                      = each.value.users_dn
-  bind_dn                       = try(each.value.bind_dn, null)
-  bind_credential               = try(each.value.bind_credential, null)
-  use_truststore_spi            = try(each.value.use_truststore_spi, null)
-  trust_email                   = try(each.value.trust_email, null)
-  pagination                    = try(each.value.pagination, null)
-  allow_kerberos_authentication = try(each.value.allow_kerberos_authentication, null)
-  start_tls                     = try(each.value.start_tls, null)
+  realm_id                = keycloak_realm.this[each.value.realm].id
+  name                    = each.value.name
+  enabled                 = coalesce(try(each.value.enabled, null), true)
+  priority                = try(each.value.priority, null)
+  edit_mode               = try(each.value.edit_mode, null)
+  import_enabled          = try(each.value.import_enabled, null)
+  sync_registrations      = try(each.value.sync_registrations, null)
+  vendor                  = try(each.value.vendor, null)
+  username_ldap_attribute = try(each.value.username_ldap_attribute, null)
+  rdn_ldap_attribute      = try(each.value.rdn_ldap_attribute, null)
+  uuid_ldap_attribute     = try(each.value.uuid_ldap_attribute, null)
+  user_object_classes     = try(each.value.user_object_classes, null)
+  connection_url          = each.value.connection_url
+  users_dn                = each.value.users_dn
+  bind_dn                 = try(each.value.bind_dn, null)
+  bind_credential         = try(each.value.bind_credential, null)
+  use_truststore_spi      = try(each.value.use_truststore_spi, null)
+  trust_email             = try(each.value.trust_email, null)
+  pagination              = try(each.value.pagination, null)
+  start_tls               = try(each.value.start_tls, null)
 }
 
 resource "keycloak_custom_user_federation" "kerberos" {
@@ -429,7 +410,7 @@ resource "keycloak_custom_user_federation" "kerberos" {
 resource "keycloak_openid_client_scope" "this" {
   for_each = local.client_scopes
 
-  realm_id    = each.value.realm
+  realm_id    = keycloak_realm.this[each.value.realm].id
   name        = each.value.name
   description = try(each.value.description, null)
 }
@@ -437,7 +418,7 @@ resource "keycloak_openid_client_scope" "this" {
 resource "keycloak_generic_protocol_mapper" "client_scope" {
   for_each = local.client_scope_mappers_map
 
-  realm_id        = each.value.realm
+  realm_id        = keycloak_realm.this[each.value.realm].id
   client_scope_id = keycloak_openid_client_scope.this[each.value.scope_name].id
   name            = each.value.name
   protocol        = coalesce(try(each.value.mapper.protocol, null), "openid-connect")
@@ -457,7 +438,7 @@ resource "keycloak_generic_protocol_mapper" "client_scope" {
 resource "keycloak_openid_client" "this" {
   for_each = local.clients
 
-  realm_id    = each.value.realm
+  realm_id    = keycloak_realm.this[each.value.realm].id
   client_id   = each.value.client_id
   name        = try(each.value.name, null)
   access_type = upper(each.value.client_type)
@@ -479,7 +460,7 @@ resource "keycloak_openid_client" "this" {
 resource "keycloak_openid_client_default_scopes" "this" {
   for_each = local.clients_with_default_scopes
 
-  realm_id  = each.value.realm
+  realm_id  = keycloak_realm.this[each.value.realm].id
   client_id = keycloak_openid_client.this[each.key].id
 
   default_scopes = coalesce(try(each.value.default_scopes, null), [])
@@ -488,7 +469,7 @@ resource "keycloak_openid_client_default_scopes" "this" {
 resource "keycloak_openid_client_optional_scopes" "this" {
   for_each = local.clients_with_optional_scopes
 
-  realm_id  = each.value.realm
+  realm_id  = keycloak_realm.this[each.value.realm].id
   client_id = keycloak_openid_client.this[each.key].id
 
   optional_scopes = coalesce(try(each.value.optional_scopes, null), [])
@@ -497,43 +478,35 @@ resource "keycloak_openid_client_optional_scopes" "this" {
 resource "keycloak_role" "realm" {
   for_each = local.realm_roles
 
-  realm_id    = each.value.realm
+  realm_id    = keycloak_realm.this[each.value.realm].id
   name        = each.value.name
   description = try(each.value.description, null)
 
-  composite_roles = compact([
-    for role_name in each.value.composites :
-    try(keycloak_role.realm["${each.value.realm}:${role_name}"].id, null)
-    if role_name != each.value.name
-  ])
+  composite_roles = []
 }
 
 resource "keycloak_role" "client" {
   for_each = local.client_roles
 
-  realm_id    = each.value.realm
+  realm_id    = keycloak_realm.this[each.value.realm].id
   client_id   = keycloak_openid_client.this[each.value.client_id].id
   name        = each.value.name
   description = try(each.value.description, null)
 
-  composite_roles = compact([
-    for role_name in each.value.composites :
-    try(keycloak_role.client["${each.value.realm}:${each.value.client_id}:${role_name}"].id, null)
-    if role_name != each.value.name
-  ])
+  composite_roles = []
 }
 
 data "keycloak_user" "by_username" {
   for_each = local.user_lookup
 
-  realm_id = each.value.realm
+  realm_id = keycloak_realm.this[each.value.realm].id
   username = each.value.username
 }
 
 data "keycloak_group" "by_name" {
   for_each = local.group_lookup
 
-  realm_id = each.value.realm
+  realm_id = keycloak_realm.this[each.value.realm].id
   name     = each.value.name
 }
 
@@ -543,9 +516,10 @@ resource "keycloak_user_roles" "this" {
     "${rb.realm}:${coalesce(try(rb.user_id, null), try(rb.username, null), idx)}" => rb
   }
 
-  realm_id = each.value.realm
+  realm_id = keycloak_realm.this[each.value.realm].id
   user_id = coalesce(
     try(each.value.user_id, null),
+    try(keycloak_user.this["${each.value.realm}/${each.value.username}"].id, null),
     try(data.keycloak_user.by_username["${each.value.realm}:${each.value.username}"].id, null),
     ""
   )
@@ -571,9 +545,10 @@ resource "keycloak_group_roles" "this" {
     "${rb.realm}:${coalesce(try(rb.group_id, null), try(rb.group_name, null), idx)}" => rb
   }
 
-  realm_id = each.value.realm
+  realm_id = keycloak_realm.this[each.value.realm].id
   group_id = coalesce(
     try(each.value.group_id, null),
+    try(keycloak_group.this["${each.value.realm}/${each.value.group_name}"].id, null),
     try(data.keycloak_group.by_name["${each.value.realm}:${each.value.group_name}"].id, null),
     ""
   )
@@ -596,35 +571,41 @@ resource "keycloak_group_roles" "this" {
 resource "keycloak_group" "this" {
   for_each = local.groups
 
-  realm_id   = each.value.realm
-  name       = each.value.name
-  attributes = each.value.attributes
-  parent_id  = try(keycloak_group.this["${each.value.realm}/${each.value.parent}"].id, null)
+  realm_id = keycloak_realm.this[each.value.realm].id
+  name     = each.value.name
+  attributes = {
+    for k, v in each.value.attributes :
+    k => join(",", v)
+  }
+  parent_id = null
 }
 
 resource "keycloak_default_groups" "this" {
   for_each = local.default_groups_resolved
 
-  realm_id  = each.key
+  realm_id  = keycloak_realm.this[each.key].id
   group_ids = each.value
 }
 
 resource "keycloak_user" "this" {
   for_each = local.users
 
-  realm_id         = each.value.realm
-  username         = each.value.username
-  enabled          = each.value.enabled
-  email            = try(each.value.email, null)
-  first_name       = try(each.value.first_name, null)
-  last_name        = try(each.value.last_name, null)
-  attributes       = each.value.attributes
+  realm_id   = keycloak_realm.this[each.value.realm].id
+  username   = each.value.username
+  enabled    = each.value.enabled
+  email      = try(each.value.email, null)
+  first_name = try(each.value.first_name, null)
+  last_name  = try(each.value.last_name, null)
+  attributes = {
+    for k, v in each.value.attributes :
+    k => join(",", v)
+  }
   required_actions = coalesce(try(each.value.required_actions, null), [])
 
   dynamic "initial_password" {
     for_each = try(each.value.initial_password, null) != null ? [each.value.initial_password] : []
     content {
-      value     = initial_password.value
+      value     = tostring(initial_password.value)
       temporary = coalesce(try(initial_password.temporary, null), true)
     }
   }
@@ -636,7 +617,7 @@ resource "keycloak_user_roles" "service_accounts" {
     key => sa
   }
 
-  realm_id = each.value.realm
+  realm_id = keycloak_realm.this[each.value.realm].id
   user_id  = keycloak_openid_client.this[each.value.client_id].service_account_user_id
 
   role_ids = compact(concat(
@@ -657,7 +638,7 @@ resource "keycloak_user_roles" "service_accounts" {
 resource "keycloak_oidc_identity_provider" "this" {
   for_each = local.oidc_identity_providers
 
-  realm              = each.value.realm
+  realm              = keycloak_realm.this[each.value.realm].realm
   alias              = each.value.alias
   enabled            = each.value.enabled
   display_name       = try(each.value.display_name, null)
@@ -674,13 +655,13 @@ resource "keycloak_oidc_identity_provider" "this" {
   user_info_url     = try(each.value.userinfo_url, null)
   issuer            = try(each.value.issuer, null)
   jwks_url          = try(each.value.jwks_url, null)
-  default_scopes    = coalesce(try(each.value.default_scopes, null), [])
+  default_scopes    = try(join(" ", coalesce(try(each.value.default_scopes, null), [])), null)
 }
 
 resource "keycloak_saml_identity_provider" "this" {
   for_each = local.saml_identity_providers
 
-  realm              = each.value.realm
+  realm              = keycloak_realm.this[each.value.realm].realm
   alias              = each.value.alias
   enabled            = each.value.enabled
   display_name       = try(each.value.display_name, null)
@@ -700,7 +681,7 @@ resource "keycloak_saml_identity_provider" "this" {
 resource "keycloak_custom_identity_provider_mapper" "this" {
   for_each = local.identity_provider_mappers
 
-  realm                    = each.value.realm
+  realm                    = keycloak_realm.this[each.value.realm].realm
   name                     = each.value.name
   identity_provider_alias  = each.value.identity_provider_alias
   identity_provider_mapper = each.value.mapper_type
