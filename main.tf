@@ -244,6 +244,27 @@ locals {
     "${coalesce(try(h.realm, null), local.default_realm)}/${h.name}" => h
     if coalesce(try(h.realm, null), local.default_realm) != null
   }
+
+  event_settings = {
+    for e in var.event_settings :
+    e.realm => e
+  }
+
+  event_listener_hooks = {
+    for h in var.event_listener_hooks :
+    "${coalesce(try(h.realm, null), local.default_realm)}/${h.name}" => h
+    if coalesce(try(h.realm, null), local.default_realm) != null
+  }
+
+  session_settings = {
+    for s in var.session_settings :
+    s.realm => s
+  }
+
+  token_settings = {
+    for t in var.token_settings :
+    t.realm => t
+  }
 }
 
 resource "keycloak_realm" "this" {
@@ -272,6 +293,18 @@ resource "keycloak_realm" "this" {
   )
 
   password_policy = try(local.password_policies[each.key], null)
+
+  sso_session_idle_timeout             = try(local.session_settings[each.key].sso_session_idle_timeout, null)
+  sso_session_max_lifespan             = try(local.session_settings[each.key].sso_session_max_lifespan, null)
+  sso_session_idle_timeout_remember_me = try(local.session_settings[each.key].sso_session_idle_timeout_remember_me, null)
+  sso_session_max_lifespan_remember_me = try(local.session_settings[each.key].sso_session_max_lifespan_remember_me, null)
+  offline_session_idle_timeout         = try(local.session_settings[each.key].offline_session_idle_timeout, null)
+  offline_session_max_lifespan         = try(local.session_settings[each.key].offline_session_max_lifespan, null)
+
+  access_token_lifespan                   = try(local.token_settings[each.key].access_token_lifespan, null)
+  access_token_lifespan_for_implicit_flow = try(local.token_settings[each.key].access_token_lifespan_for_implicit_flow, null)
+  client_session_idle_timeout             = try(local.token_settings[each.key].client_session_idle_timeout, null)
+  client_session_max_lifespan             = try(local.token_settings[each.key].client_session_max_lifespan, null)
 
   dynamic "security_defenses" {
     for_each = try(local.bruteforce_settings[each.key].enabled, false) ? [local.bruteforce_settings[each.key]] : []
@@ -321,6 +354,18 @@ resource "keycloak_realm" "this" {
       starttls              = try(smtp_server.value.starttls, null)
     }
   }
+}
+
+resource "keycloak_realm_events" "this" {
+  for_each = local.event_settings
+
+  realm_id                     = keycloak_realm.this[each.key].id
+  events_enabled               = try(each.value.events_enabled, null)
+  events_expiration            = try(each.value.events_expiration, null)
+  events_listeners             = try(each.value.events_listeners, null)
+  enabled_event_types          = try(each.value.enabled_event_types, null)
+  admin_events_enabled         = try(each.value.admin_events_enabled, null)
+  admin_events_details_enabled = try(each.value.admin_events_details_enabled, null)
 }
 
 resource "keycloak_openid_client_scope" "this" {

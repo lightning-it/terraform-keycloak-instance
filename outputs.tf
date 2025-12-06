@@ -191,3 +191,34 @@ output "localization_settings" {
     }
   }
 }
+
+output "event_settings" {
+  description = "Event configuration per realm."
+  value = {
+    for realm, settings in local.event_settings :
+    realm => {
+      events_enabled               = try(settings.events_enabled, null)
+      events_expiration            = try(settings.events_expiration, null)
+      events_listeners             = try(settings.events_listeners, null)
+      enabled_event_types          = try(settings.enabled_event_types, null)
+      admin_events_enabled         = try(settings.admin_events_enabled, null)
+      admin_events_details_enabled = try(settings.admin_events_details_enabled, null)
+    }
+  }
+}
+
+output "session_settings" {
+  description = "Summary of session timeout settings per realm."
+  value = {
+    for realm, settings in local.session_settings :
+    realm => settings
+  }
+}
+
+output "token_settings" {
+  description = "Summary of token timeout settings per realm."
+  value = {
+    for realm, settings in local.token_settings :
+    realm => settings
+  }
+}

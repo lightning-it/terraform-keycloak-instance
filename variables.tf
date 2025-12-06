@@ -319,3 +319,60 @@ variable "custom_theme_hooks" {
 
   default = []
 }
+
+variable "event_settings" {
+  description = "Event configuration per realm (enabled events, storage, listeners)."
+  type = list(object({
+    realm                        = string
+    events_enabled               = optional(bool)
+    events_expiration            = optional(number)
+    events_listeners             = optional(list(string))
+    enabled_event_types          = optional(list(string))
+    admin_events_enabled         = optional(bool)
+    admin_events_details_enabled = optional(bool)
+  }))
+
+  default = []
+}
+
+variable "event_listener_hooks" {
+  description = "Optional metadata for custom event listener deployments."
+  type = list(object({
+    name       = string
+    realm      = optional(string)
+    target_url = optional(string)
+    notes      = optional(string)
+  }))
+
+  default = []
+}
+
+variable "session_settings" {
+  description = "Session timeout settings per realm."
+  type = list(object({
+    realm                                = string
+    sso_session_idle_timeout             = optional(number)
+    sso_session_max_lifespan             = optional(number)
+    sso_session_idle_timeout_remember_me = optional(number)
+    sso_session_max_lifespan_remember_me = optional(number)
+    offline_session_idle_timeout         = optional(number)
+    offline_session_max_lifespan         = optional(number)
+  }))
+
+  default = []
+}
+
+variable "token_settings" {
+  description = "Token and login timeout settings per realm."
+  type = list(object({
+    realm                                   = string
+    login_timeout                           = optional(number)
+    login_action_timeout                    = optional(number)
+    access_token_lifespan                   = optional(number)
+    access_token_lifespan_for_implicit_flow = optional(number)
+    client_session_idle_timeout             = optional(number)
+    client_session_max_lifespan             = optional(number)
+  }))
+
+  default = []
+}

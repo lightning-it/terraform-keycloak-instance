@@ -265,6 +265,40 @@ module "keycloak_instance" {
       otp_look_ahead_window = 1
     }
   ]
+
+  event_settings = [
+    {
+      realm                        = "tier0"
+      events_enabled               = true
+      events_expiration            = 3600
+      events_listeners             = ["jboss-logging", "custom-webhook"]
+      enabled_event_types          = ["LOGIN", "LOGOUT", "REGISTER"]
+      admin_events_enabled         = true
+      admin_events_details_enabled = true
+    }
+  ]
+
+  session_settings = [
+    {
+      realm                        = "tier0"
+      sso_session_idle_timeout     = 3600      # 1 hour
+      sso_session_max_lifespan     = 28800     # 8 hours
+      offline_session_idle_timeout = 2592000   # 30 days
+      offline_session_max_lifespan = 2592000   # 30 days
+    }
+  ]
+
+  token_settings = [
+    {
+      realm                          = "tier0"
+      access_token_lifespan          = 900      # 15 minutes
+      access_token_lifespan_for_implicit_flow = 600
+      client_session_idle_timeout    = 3600
+      client_session_max_lifespan    = 28800
+      login_timeout                  = 300      # 5 minutes
+      login_action_timeout           = 300
+    }
+  ]
 }
 ```
 
@@ -301,6 +335,7 @@ No modules.
 | [keycloak_openid_client_optional_scopes.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client_optional_scopes) | resource |
 | [keycloak_openid_client_scope.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client_scope) | resource |
 | [keycloak_realm.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/realm) | resource |
+| [keycloak_realm_events.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/realm_events) | resource |
 | [keycloak_role.client](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/role) | resource |
 | [keycloak_role.realm](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/role) | resource |
 | [keycloak_saml_identity_provider.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/saml_identity_provider) | resource |
@@ -321,6 +356,8 @@ No modules.
 | <a name="input_clients"></a> [clients](#input\_clients) | List of Keycloak clients to configure for this instance. | <pre>list(object({<br/>    client_id                    = string<br/>    client_type                  = string<br/>    name                         = optional(string)<br/>    realm                        = optional(string)<br/>    redirect_uris                = optional(list(string))<br/>    web_origins                  = optional(list(string))<br/>    base_url                     = optional(string)<br/>    standard_flow_enabled        = optional(bool)<br/>    implicit_flow_enabled        = optional(bool)<br/>    direct_access_grants_enabled = optional(bool)<br/>    service_accounts_enabled     = optional(bool)<br/>    frontchannel_logout_enabled  = optional(bool)<br/>    default_scopes               = optional(list(string))<br/>    optional_scopes              = optional(list(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_custom_theme_hooks"></a> [custom\_theme\_hooks](#input\_custom\_theme\_hooks) | Optional hooks or metadata describing custom theme deployments. | <pre>list(object({<br/>    name        = string<br/>    realm       = optional(string)<br/>    source_path = optional(string)<br/>    notes       = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_default_groups"></a> [default\_groups](#input\_default\_groups) | Default groups to assign to new users per realm. | <pre>list(object({<br/>    realm = string<br/>    names = list(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_event_listener_hooks"></a> [event\_listener\_hooks](#input\_event\_listener\_hooks) | Optional metadata for custom event listener deployments. | <pre>list(object({<br/>    name       = string<br/>    realm      = optional(string)<br/>    target_url = optional(string)<br/>    notes      = optional(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_event_settings"></a> [event\_settings](#input\_event\_settings) | Event configuration per realm (enabled events, storage, listeners). | <pre>list(object({<br/>    realm                        = string<br/>    events_enabled               = optional(bool)<br/>    events_expiration            = optional(number)<br/>    events_listeners             = optional(list(string))<br/>    enabled_event_types          = optional(list(string))<br/>    admin_events_enabled         = optional(bool)<br/>    admin_events_details_enabled = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_groups"></a> [groups](#input\_groups) | List of Keycloak groups to create, including optional attributes and hierarchy. | <pre>list(object({<br/>    name       = string<br/>    realm      = optional(string)<br/>    parent     = optional(string)<br/>    attributes = optional(map(list(string)))<br/>    path       = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_provider_mappers"></a> [identity\_provider\_mappers](#input\_identity\_provider\_mappers) | List of identity provider mappers to map external attributes/claims into Keycloak. | <pre>list(object({<br/>    identity_provider_alias = string<br/>    realm                   = optional(string)<br/>    name                    = string<br/>    mapper_type             = string<br/>    config                  = optional(map(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_providers"></a> [identity\_providers](#input\_identity\_providers) | List of identity providers (OIDC/SAML) to configure for this Keycloak instance. | <pre>list(object({<br/>    name               = string<br/>    realm              = optional(string)<br/>    provider_type      = string<br/>    enabled            = optional(bool)<br/>    alias              = optional(string)<br/>    display_name       = optional(string)<br/>    trust_email        = optional(bool)<br/>    store_token        = optional(bool)<br/>    link_only          = optional(bool)<br/>    hide_on_login_page = optional(bool)<br/><br/>    # OIDC-specific<br/>    client_id         = optional(string)<br/>    client_secret     = optional(string)<br/>    authorization_url = optional(string)<br/>    token_url         = optional(string)<br/>    userinfo_url      = optional(string)<br/>    issuer            = optional(string)<br/>    jwks_url          = optional(string)<br/>    default_scopes    = optional(list(string))<br/><br/>    # SAML-specific<br/>    single_sign_on_service_url = optional(string)<br/>    single_logout_service_url  = optional(string)<br/>    entity_id                  = optional(string)<br/>    x509_certificate           = optional(string)<br/>    name_id_policy_format      = optional(string)<br/>    force_authn                = optional(bool)<br/>  }))</pre> | `[]` | no |
@@ -331,8 +368,10 @@ No modules.
 | <a name="input_realms"></a> [realms](#input\_realms) | List of Keycloak realms to manage with this module. | <pre>list(object({<br/>    # Required<br/>    name = string<br/><br/>    # Optional fields — handled with try()/coalesce() in main.tf<br/>    display_name             = optional(string)<br/>    enabled                  = optional(bool)<br/>    login_theme              = optional(string)<br/>    registration_allowed     = optional(bool)<br/>    remember_me              = optional(bool)<br/>    login_with_email_allowed = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_role_bindings"></a> [role\_bindings](#input\_role\_bindings) | Role bindings to users and groups. | <pre>list(object({<br/>    realm        = string<br/>    user_id      = optional(string)<br/>    username     = optional(string)<br/>    group_id     = optional(string)<br/>    group_name   = optional(string)<br/>    realm_roles  = optional(list(string))<br/>    client_roles = optional(map(list(string)))<br/>  }))</pre> | `[]` | no |
 | <a name="input_service_accounts"></a> [service\_accounts](#input\_service\_accounts) | Configuration for client service accounts, including optional role assignments. | <pre>list(object({<br/>    client_id    = string<br/>    realm        = optional(string)<br/>    enabled      = optional(bool)<br/>    attributes   = optional(map(list(string)))<br/>    realm_roles  = optional(list(string))<br/>    client_roles = optional(map(list(string)))<br/>  }))</pre> | `[]` | no |
+| <a name="input_session_settings"></a> [session\_settings](#input\_session\_settings) | Session timeout settings per realm. | <pre>list(object({<br/>    realm                                = string<br/>    sso_session_idle_timeout             = optional(number)<br/>    sso_session_max_lifespan             = optional(number)<br/>    sso_session_idle_timeout_remember_me = optional(number)<br/>    sso_session_max_lifespan_remember_me = optional(number)<br/>    offline_session_idle_timeout         = optional(number)<br/>    offline_session_max_lifespan         = optional(number)<br/>  }))</pre> | `[]` | no |
 | <a name="input_smtp_settings"></a> [smtp\_settings](#input\_smtp\_settings) | SMTP settings per realm for outgoing email. | <pre>list(object({<br/>    realm        = string<br/>    host         = string<br/>    port         = number<br/>    from         = string<br/>    auth         = bool<br/>    user         = optional(string)<br/>    password     = optional(string)<br/>    ssl          = optional(bool)<br/>    starttls     = optional(bool)<br/>    reply_to     = optional(string)<br/>    from_display = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_theme_settings"></a> [theme\_settings](#input\_theme\_settings) | Theme settings per realm (login, account, admin, email). | <pre>list(object({<br/>    realm         = string<br/>    login_theme   = optional(string)<br/>    account_theme = optional(string)<br/>    admin_theme   = optional(string)<br/>    email_theme   = optional(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_token_settings"></a> [token\_settings](#input\_token\_settings) | Token and login timeout settings per realm. | <pre>list(object({<br/>    realm                                   = string<br/>    login_timeout                           = optional(number)<br/>    login_action_timeout                    = optional(number)<br/>    access_token_lifespan                   = optional(number)<br/>    access_token_lifespan_for_implicit_flow = optional(number)<br/>    client_session_idle_timeout             = optional(number)<br/>    client_session_max_lifespan             = optional(number)<br/>  }))</pre> | `[]` | no |
 | <a name="input_users"></a> [users](#input\_users) | List of users to seed in Keycloak, including credentials and attributes. | <pre>list(object({<br/>    username         = string<br/>    realm            = optional(string)<br/>    enabled          = optional(bool)<br/>    email            = optional(string)<br/>    first_name       = optional(string)<br/>    last_name        = optional(string)<br/>    attributes       = optional(map(list(string)))<br/>    required_actions = optional(list(string))<br/>    initial_password = optional(object({<br/>      value     = string<br/>      temporary = optional(bool)<br/>    }))<br/>  }))</pre> | `[]` | no |
 
 ## Outputs
@@ -343,6 +382,7 @@ No modules.
 | <a name="output_client_scopes"></a> [client\_scopes](#output\_client\_scopes) | Map of configured client scopes keyed by scope name. |
 | <a name="output_clients"></a> [clients](#output\_clients) | Map of configured clients keyed by client\_id. |
 | <a name="output_default_groups"></a> [default\_groups](#output\_default\_groups) | Default groups configured per realm. |
+| <a name="output_event_settings"></a> [event\_settings](#output\_event\_settings) | Event configuration per realm. |
 | <a name="output_groups"></a> [groups](#output\_groups) | Map of configured groups keyed by "<realm>/<name>". |
 | <a name="output_identity_provider_mappers"></a> [identity\_provider\_mappers](#output\_identity\_provider\_mappers) | Map of identity provider mappers keyed by "<realm>/<alias>/<name>". |
 | <a name="output_identity_providers"></a> [identity\_providers](#output\_identity\_providers) | Map of configured identity providers keyed by "<realm>/<alias>". |
@@ -351,6 +391,8 @@ No modules.
 | <a name="output_realms"></a> [realms](#output\_realms) | Map of managed realms, keyed by realm name. |
 | <a name="output_role_bindings"></a> [role\_bindings](#output\_role\_bindings) | Applied role bindings for users and groups. |
 | <a name="output_service_accounts"></a> [service\_accounts](#output\_service\_accounts) | Map of client service account users keyed by "<realm>/<client\_id>". |
+| <a name="output_session_settings"></a> [session\_settings](#output\_session\_settings) | Summary of session timeout settings per realm. |
 | <a name="output_theme_settings"></a> [theme\_settings](#output\_theme\_settings) | Effective theme settings per realm. |
+| <a name="output_token_settings"></a> [token\_settings](#output\_token\_settings) | Summary of token timeout settings per realm. |
 | <a name="output_users"></a> [users](#output\_users) | Map of seeded users keyed by "<realm>/<username>". |
 <!-- END_TF_DOCS -->
