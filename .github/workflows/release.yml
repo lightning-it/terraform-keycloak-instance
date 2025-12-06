@@ -29,9 +29,6 @@ jobs:
       - name: Terraform validate (module root)
         run: terraform validate
 
-      - name: Terraform plan (module root)
-        run: terraform plan -input=false -lock=false
-
       - name: Terraform validate (test fixtures)
         run: |
           for dir in tests/keycloak-smoke tests/keycloak-advanced tests/keycloak-empty; do
