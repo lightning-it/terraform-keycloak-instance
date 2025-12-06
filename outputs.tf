@@ -166,3 +166,28 @@ output "identity_provider_mappers" {
     }
   }
 }
+
+output "theme_settings" {
+  description = "Effective theme settings per realm."
+  value = {
+    for realm, settings in local.theme_settings :
+    realm => {
+      login_theme   = try(settings.login_theme, null)
+      account_theme = try(settings.account_theme, null)
+      admin_theme   = try(settings.admin_theme, null)
+      email_theme   = try(settings.email_theme, null)
+    }
+  }
+}
+
+output "localization_settings" {
+  description = "Localization settings per realm."
+  value = {
+    for realm, settings in local.localization_settings :
+    realm => {
+      internationalization_enabled = coalesce(try(settings.internationalization_enabled, null), true)
+      supported_locales            = try(settings.supported_locales, null)
+      default_locale               = try(settings.default_locale, null)
+    }
+  }
+}

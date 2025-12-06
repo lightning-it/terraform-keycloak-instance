@@ -205,3 +205,117 @@ variable "identity_provider_mappers" {
 
   default = []
 }
+
+variable "smtp_settings" {
+  description = "SMTP settings per realm for outgoing email."
+  type = list(object({
+    realm        = string
+    host         = string
+    port         = number
+    from         = string
+    auth         = bool
+    user         = optional(string)
+    password     = optional(string)
+    ssl          = optional(bool)
+    starttls     = optional(bool)
+    reply_to     = optional(string)
+    from_display = optional(string)
+  }))
+
+  default = []
+}
+
+variable "password_policies" {
+  description = "Password policies per realm."
+  type = list(object({
+    realm    = string
+    policies = list(string)
+  }))
+
+  default = []
+}
+
+variable "bruteforce_settings" {
+  description = "Brute-force protection settings per realm."
+  type = list(object({
+    realm                            = string
+    enabled                          = bool
+    permanent_lockout                = bool
+    max_login_failures               = number
+    wait_increment_seconds           = number
+    quick_login_check_milli          = number
+    minimum_quick_login_wait_seconds = number
+    max_failure_wait_seconds         = number
+    failure_reset_time_seconds       = number
+  }))
+
+  default = []
+}
+
+variable "auth_flow_settings" {
+  description = "Authentication flow and login UX settings per realm."
+  type = list(object({
+    realm                          = string
+    login_with_email_allowed       = optional(bool)
+    duplicate_emails_allowed       = optional(bool)
+    reset_password_allowed         = optional(bool)
+    remember_me                    = optional(bool)
+    verify_email                   = optional(bool)
+    registration_allowed           = optional(bool)
+    registration_email_as_username = optional(bool)
+  }))
+
+  default = []
+}
+
+variable "otp_settings" {
+  description = "OTP/MFA configuration per realm."
+  type = list(object({
+    realm                 = string
+    otp_type              = optional(string)
+    otp_alg               = optional(string)
+    otp_digits            = optional(number)
+    otp_initial_counter   = optional(number)
+    otp_look_ahead_window = optional(number)
+    otp_period            = optional(number)
+  }))
+
+  default = []
+}
+
+variable "theme_settings" {
+  description = "Theme settings per realm (login, account, admin, email)."
+  type = list(object({
+    realm         = string
+    login_theme   = optional(string)
+    account_theme = optional(string)
+    admin_theme   = optional(string)
+    email_theme   = optional(string)
+  }))
+
+  default = []
+}
+
+variable "localization_settings" {
+  description = "Localization settings per realm (internationalization and locales)."
+  type = list(object({
+    realm                        = string
+    internationalization_enabled = optional(bool)
+    supported_locales            = optional(list(string))
+    default_locale               = optional(string)
+  }))
+
+  default = []
+}
+
+variable "custom_theme_hooks" {
+  description = "Optional hooks or metadata describing custom theme deployments."
+  type = list(object({
+    name        = string
+    realm       = optional(string)
+    source_path = optional(string)
+    notes       = optional(string)
+  }))
+
+  default = []
+}

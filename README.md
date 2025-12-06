@@ -211,6 +211,60 @@ module "keycloak_instance" {
       }
     }
   ]
+
+  smtp_settings = [
+    {
+      realm        = "tier0"
+      host         = "smtp.example.com"
+      port         = 587
+      from         = "no-reply@example.com"
+      starttls     = true
+      from_display = "Example Platform"
+    }
+  ]
+
+  password_policies = [
+    {
+      realm    = "tier0"
+      policies = ["length(10)", "digits(1)", "lowerCase(1)", "upperCase(1)"]
+    }
+  ]
+
+  bruteforce_settings = [
+    {
+      realm                            = "tier0"
+      enabled                          = true
+      permanent_lockout                = false
+      max_login_failures               = 5
+      wait_increment_seconds           = 60
+      quick_login_check_milli          = 1000
+      minimum_quick_login_wait_seconds = 60
+      max_failure_wait_seconds         = 900
+      failure_reset_time_seconds       = 3600
+    }
+  ]
+
+  auth_flow_settings = [
+    {
+      realm                        = "tier0"
+      login_with_email_allowed     = true
+      remember_me                  = true
+      verify_email                 = true
+      registration_allowed         = false
+      registration_email_as_username = false
+    }
+  ]
+
+  otp_settings = [
+    {
+      realm                 = "tier0"
+      otp_type              = "totp"
+      otp_alg               = "HmacSHA1"
+      otp_digits            = 6
+      otp_period            = 30
+      otp_look_ahead_window = 1
+    }
+  ]
 }
 ```
 
@@ -260,17 +314,25 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_auth_flow_settings"></a> [auth\_flow\_settings](#input\_auth\_flow\_settings) | Authentication flow and login UX settings per realm. | <pre>list(object({<br/>    realm                          = string<br/>    login_with_email_allowed       = optional(bool)<br/>    duplicate_emails_allowed       = optional(bool)<br/>    reset_password_allowed         = optional(bool)<br/>    remember_me                    = optional(bool)<br/>    verify_email                   = optional(bool)<br/>    registration_allowed           = optional(bool)<br/>    registration_email_as_username = optional(bool)<br/>  }))</pre> | `[]` | no |
+| <a name="input_bruteforce_settings"></a> [bruteforce\_settings](#input\_bruteforce\_settings) | Brute-force protection settings per realm. | <pre>list(object({<br/>    realm                            = string<br/>    enabled                          = bool<br/>    permanent_lockout                = bool<br/>    max_login_failures               = number<br/>    wait_increment_seconds           = number<br/>    quick_login_check_milli          = number<br/>    minimum_quick_login_wait_seconds = number<br/>    max_failure_wait_seconds         = number<br/>    failure_reset_time_seconds       = number<br/>  }))</pre> | `[]` | no |
 | <a name="input_client_roles"></a> [client\_roles](#input\_client\_roles) | Client-specific roles to configure. | <pre>list(object({<br/>    client_id   = string<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    composite   = optional(bool)<br/>    composites  = optional(list(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_client_scopes"></a> [client\_scopes](#input\_client\_scopes) | List of reusable client scopes. | <pre>list(object({<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    protocol    = optional(string)<br/>    mappers = optional(list(object({<br/>      name             = string<br/>      protocol         = optional(string)<br/>      protocol_mapper  = string<br/>      consent_required = optional(bool)<br/>      consent_text     = optional(string)<br/>      config           = optional(map(string))<br/>    })))<br/>  }))</pre> | `[]` | no |
 | <a name="input_clients"></a> [clients](#input\_clients) | List of Keycloak clients to configure for this instance. | <pre>list(object({<br/>    client_id                    = string<br/>    client_type                  = string<br/>    name                         = optional(string)<br/>    realm                        = optional(string)<br/>    redirect_uris                = optional(list(string))<br/>    web_origins                  = optional(list(string))<br/>    base_url                     = optional(string)<br/>    standard_flow_enabled        = optional(bool)<br/>    implicit_flow_enabled        = optional(bool)<br/>    direct_access_grants_enabled = optional(bool)<br/>    service_accounts_enabled     = optional(bool)<br/>    frontchannel_logout_enabled  = optional(bool)<br/>    default_scopes               = optional(list(string))<br/>    optional_scopes              = optional(list(string))<br/>  }))</pre> | `[]` | no |
+| <a name="input_custom_theme_hooks"></a> [custom\_theme\_hooks](#input\_custom\_theme\_hooks) | Optional hooks or metadata describing custom theme deployments. | <pre>list(object({<br/>    name        = string<br/>    realm       = optional(string)<br/>    source_path = optional(string)<br/>    notes       = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_default_groups"></a> [default\_groups](#input\_default\_groups) | Default groups to assign to new users per realm. | <pre>list(object({<br/>    realm = string<br/>    names = list(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_groups"></a> [groups](#input\_groups) | List of Keycloak groups to create, including optional attributes and hierarchy. | <pre>list(object({<br/>    name       = string<br/>    realm      = optional(string)<br/>    parent     = optional(string)<br/>    attributes = optional(map(list(string)))<br/>    path       = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_provider_mappers"></a> [identity\_provider\_mappers](#input\_identity\_provider\_mappers) | List of identity provider mappers to map external attributes/claims into Keycloak. | <pre>list(object({<br/>    identity_provider_alias = string<br/>    realm                   = optional(string)<br/>    name                    = string<br/>    mapper_type             = string<br/>    config                  = optional(map(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_providers"></a> [identity\_providers](#input\_identity\_providers) | List of identity providers (OIDC/SAML) to configure for this Keycloak instance. | <pre>list(object({<br/>    name               = string<br/>    realm              = optional(string)<br/>    provider_type      = string<br/>    enabled            = optional(bool)<br/>    alias              = optional(string)<br/>    display_name       = optional(string)<br/>    trust_email        = optional(bool)<br/>    store_token        = optional(bool)<br/>    link_only          = optional(bool)<br/>    hide_on_login_page = optional(bool)<br/><br/>    # OIDC-specific<br/>    client_id         = optional(string)<br/>    client_secret     = optional(string)<br/>    authorization_url = optional(string)<br/>    token_url         = optional(string)<br/>    userinfo_url      = optional(string)<br/>    issuer            = optional(string)<br/>    jwks_url          = optional(string)<br/>    default_scopes    = optional(list(string))<br/><br/>    # SAML-specific<br/>    single_sign_on_service_url = optional(string)<br/>    single_logout_service_url  = optional(string)<br/>    entity_id                  = optional(string)<br/>    x509_certificate           = optional(string)<br/>    name_id_policy_format      = optional(string)<br/>    force_authn                = optional(bool)<br/>  }))</pre> | `[]` | no |
+| <a name="input_localization_settings"></a> [localization\_settings](#input\_localization\_settings) | Localization settings per realm (internationalization and locales). | <pre>list(object({<br/>    realm                        = string<br/>    internationalization_enabled = optional(bool)<br/>    supported_locales            = optional(list(string))<br/>    default_locale               = optional(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_otp_settings"></a> [otp\_settings](#input\_otp\_settings) | OTP/MFA configuration per realm. | <pre>list(object({<br/>    realm                 = string<br/>    otp_type              = optional(string)<br/>    otp_alg               = optional(string)<br/>    otp_digits            = optional(number)<br/>    otp_initial_counter   = optional(number)<br/>    otp_look_ahead_window = optional(number)<br/>    otp_period            = optional(number)<br/>  }))</pre> | `[]` | no |
+| <a name="input_password_policies"></a> [password\_policies](#input\_password\_policies) | Password policies per realm. | <pre>list(object({<br/>    realm    = string<br/>    policies = list(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_realm_roles"></a> [realm\_roles](#input\_realm\_roles) | Realm-level roles to configure. | <pre>list(object({<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    composite   = optional(bool)<br/>    composites  = optional(list(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_realms"></a> [realms](#input\_realms) | List of Keycloak realms to manage with this module. | <pre>list(object({<br/>    # Required<br/>    name = string<br/><br/>    # Optional fields — handled with try()/coalesce() in main.tf<br/>    display_name             = optional(string)<br/>    enabled                  = optional(bool)<br/>    login_theme              = optional(string)<br/>    registration_allowed     = optional(bool)<br/>    remember_me              = optional(bool)<br/>    login_with_email_allowed = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_role_bindings"></a> [role\_bindings](#input\_role\_bindings) | Role bindings to users and groups. | <pre>list(object({<br/>    realm        = string<br/>    user_id      = optional(string)<br/>    username     = optional(string)<br/>    group_id     = optional(string)<br/>    group_name   = optional(string)<br/>    realm_roles  = optional(list(string))<br/>    client_roles = optional(map(list(string)))<br/>  }))</pre> | `[]` | no |
 | <a name="input_service_accounts"></a> [service\_accounts](#input\_service\_accounts) | Configuration for client service accounts, including optional role assignments. | <pre>list(object({<br/>    client_id    = string<br/>    realm        = optional(string)<br/>    enabled      = optional(bool)<br/>    attributes   = optional(map(list(string)))<br/>    realm_roles  = optional(list(string))<br/>    client_roles = optional(map(list(string)))<br/>  }))</pre> | `[]` | no |
+| <a name="input_smtp_settings"></a> [smtp\_settings](#input\_smtp\_settings) | SMTP settings per realm for outgoing email. | <pre>list(object({<br/>    realm        = string<br/>    host         = string<br/>    port         = number<br/>    from         = string<br/>    auth         = bool<br/>    user         = optional(string)<br/>    password     = optional(string)<br/>    ssl          = optional(bool)<br/>    starttls     = optional(bool)<br/>    reply_to     = optional(string)<br/>    from_display = optional(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_theme_settings"></a> [theme\_settings](#input\_theme\_settings) | Theme settings per realm (login, account, admin, email). | <pre>list(object({<br/>    realm         = string<br/>    login_theme   = optional(string)<br/>    account_theme = optional(string)<br/>    admin_theme   = optional(string)<br/>    email_theme   = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_users"></a> [users](#input\_users) | List of users to seed in Keycloak, including credentials and attributes. | <pre>list(object({<br/>    username         = string<br/>    realm            = optional(string)<br/>    enabled          = optional(bool)<br/>    email            = optional(string)<br/>    first_name       = optional(string)<br/>    last_name        = optional(string)<br/>    attributes       = optional(map(list(string)))<br/>    required_actions = optional(list(string))<br/>    initial_password = optional(object({<br/>      value     = string<br/>      temporary = optional(bool)<br/>    }))<br/>  }))</pre> | `[]` | no |
 
 ## Outputs
@@ -284,9 +346,11 @@ No modules.
 | <a name="output_groups"></a> [groups](#output\_groups) | Map of configured groups keyed by "<realm>/<name>". |
 | <a name="output_identity_provider_mappers"></a> [identity\_provider\_mappers](#output\_identity\_provider\_mappers) | Map of identity provider mappers keyed by "<realm>/<alias>/<name>". |
 | <a name="output_identity_providers"></a> [identity\_providers](#output\_identity\_providers) | Map of configured identity providers keyed by "<realm>/<alias>". |
+| <a name="output_localization_settings"></a> [localization\_settings](#output\_localization\_settings) | Localization settings per realm. |
 | <a name="output_realm_roles"></a> [realm\_roles](#output\_realm\_roles) | Map of configured realm roles keyed by "<realm>:<role\_name>". |
 | <a name="output_realms"></a> [realms](#output\_realms) | Map of managed realms, keyed by realm name. |
 | <a name="output_role_bindings"></a> [role\_bindings](#output\_role\_bindings) | Applied role bindings for users and groups. |
 | <a name="output_service_accounts"></a> [service\_accounts](#output\_service\_accounts) | Map of client service account users keyed by "<realm>/<client\_id>". |
+| <a name="output_theme_settings"></a> [theme\_settings](#output\_theme\_settings) | Effective theme settings per realm. |
 | <a name="output_users"></a> [users](#output\_users) | Map of seeded users keyed by "<realm>/<username>". |
 <!-- END_TF_DOCS -->
