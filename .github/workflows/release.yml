@@ -6,9 +6,46 @@ on:
       - main
 
 jobs:
+  lint:
+    name: Terraform module checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform fmt (check)
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init (module root)
+        run: terraform init -backend=false
+
+      - name: Terraform validate (module root)
+        run: terraform validate
+
+      - name: Terraform plan (module root)
+        run: terraform plan -input=false -lock=false
+
+      - name: Terraform validate (test fixtures)
+        run: |
+          for dir in tests/keycloak-smoke tests/keycloak-advanced tests/keycloak-empty; do
+            terraform -chdir="$dir" init -backend=false
+            terraform -chdir="$dir" validate
+          done
+
+      - name: TFLint (via wunder-devtools-ee)
+        run: bash scripts/wunder-devtools-ee.sh tflint --recursive
+
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
+    needs: lint
     permissions:
       contents: write       # required to create tags and releases
       issues: write         # optional, for release notes references

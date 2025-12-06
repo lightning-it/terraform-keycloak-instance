@@ -25,6 +25,6 @@ repos:
       - id: terraform-docs
         name: terraform-docs (docker)
         language: system
-        entry: bash scripts/wunder-devtools-ee.sh terraform-docs markdown table --output-file README.md --output-mode replace .
+        entry: bash scripts/wunder-devtools-ee.sh terraform-docs markdown table --output-file README.md --output-mode inject .
         pass_filenames: false
         files: ^(main\.tf|variables\.tf|outputs\.tf)$

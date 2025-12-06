@@ -9,25 +9,59 @@ terraform {
   }
 }
 
-locals {
-  # Convert the list of realms into a map for stable for_each usage
-  realms = {
-    for r in var.realms :
-    r.name => r
-  }
+module "realms" {
+  source = "./modules/realms"
+
+  realms                = var.realms
+  auth_flow_settings    = var.auth_flow_settings
+  password_policies     = var.password_policies
+  bruteforce_settings   = var.bruteforce_settings
+  otp_settings          = var.otp_settings
+  theme_settings        = var.theme_settings
+  localization_settings = var.localization_settings
+  event_settings        = var.event_settings
+  session_settings      = var.session_settings
+  token_settings        = var.token_settings
+  smtp_settings         = var.smtp_settings
 }
 
-resource "keycloak_realm" "this" {
-  for_each = local.realms
+module "clients" {
+  source = "./modules/clients"
 
-  # Technical realm name
-  realm = each.value.name
+  realms        = module.realms.realms
+  clients       = var.clients
+  client_scopes = var.client_scopes
+}
 
-  # Optional fields with sane defaults
-  enabled                  = coalesce(try(each.value.enabled, null), true)
-  display_name             = try(each.value.display_name, null)
-  login_theme              = try(each.value.login_theme, null)
-  registration_allowed     = coalesce(try(each.value.registration_allowed, null), false)
-  remember_me              = coalesce(try(each.value.remember_me, null), true)
-  login_with_email_allowed = coalesce(try(each.value.login_with_email_allowed, null), true)
+module "roles" {
+  source = "./modules/roles"
+
+  realms       = module.realms.realms
+  clients      = module.clients.clients
+  realm_roles  = var.realm_roles
+  client_roles = var.client_roles
+}
+
+module "groups_users" {
+  source = "./modules/groups_users"
+
+  realms           = module.realms.realms
+  clients          = module.clients.clients
+  realm_roles      = module.roles.realm_roles
+  client_roles     = module.roles.client_roles
+  groups           = var.groups
+  default_groups   = var.default_groups
+  users            = var.users
+  service_accounts = var.service_accounts
+  role_bindings    = var.role_bindings
+}
+
+module "idps_federation" {
+  source = "./modules/idps_federation"
+
+  realms                    = module.realms.realms
+  identity_providers        = var.identity_providers
+  identity_provider_mappers = var.identity_provider_mappers
+  ldap_user_federations     = var.ldap_user_federations
+  kerberos_user_federations = var.kerberos_user_federations
 }
