@@ -1,3 +1,5 @@
+// NOTE: This example is exercised by `make test-keycloak` and should stay in sync
+// with the testing description in README.md.
 terraform {
   required_version = ">= 1.6.0, < 2.0.0"
 

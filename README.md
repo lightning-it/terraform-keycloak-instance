@@ -1,10 +1,14 @@
 # terraform-keycloak-instance
 
+Terraform Registry: [`lightning-it/instance/keycloak`](https://registry.terraform.io/modules/lightning-it/instance/keycloak/latest)
+
 Terraform module for configuring a full Keycloak instance using the official
 [keycloak/keycloak](https://registry.terraform.io/providers/keycloak/keycloak/latest) provider. It provides a declarative,
 GitOps-friendly way to manage realms, clients and client scopes, roles and bindings, groups and defaults, users and
 service accounts, identity providers, user federation, auth policies (SMTP, password, brute force, OTP), themes,
-localization, events, and sessions.
+localization, events, and sessions. This module is intentionally broad in scope: it is designed to manage a full
+Keycloak instance (realms, clients, roles, users, identity providers, user federation, policies and sessions) from a
+single Terraform configuration.
 
 ## Use cases
 
@@ -171,6 +175,13 @@ If you tell me you’re ready to move from “realms-only” to the fuller scope
 (clients, roles, users, IdPs, etc.), we can turn those Codex prompts into a
 concrete plan for how to grow this module in a way that still feels clean and
 maintainable.
+
+## Security & production notes
+
+- Do **not** check real secrets (SMTP passwords, LDAP bind credentials, IdP client secrets, etc.) into version control.
+- Use secret managers or Terraform Cloud/HCP/CI variables for sensitive values.
+- Review password policies, brute-force settings, and token/session lifetimes carefully before using this in production realms.
+- Treat the examples in this README as starting points, not production defaults.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

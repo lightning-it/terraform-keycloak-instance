@@ -36,6 +36,14 @@ variable "clients" {
   }))
 
   default = []
+
+  validation {
+    condition = alltrue([
+      for c in var.clients :
+      contains(["public", "confidential", "bearer-only"], c.client_type)
+    ])
+    error_message = "clients[*].client_type must be one of \"public\", \"confidential\", or \"bearer-only\"."
+  }
 }
 
 variable "client_scopes" {
@@ -190,7 +198,16 @@ variable "identity_providers" {
     force_authn                = optional(bool)
   }))
 
-  default = []
+  default   = []
+  sensitive = true
+
+  validation {
+    condition = alltrue([
+      for idp in var.identity_providers :
+      contains(["oidc", "saml"], idp.provider_type)
+    ])
+    error_message = "identity_providers[*].provider_type must be either \"oidc\" or \"saml\"."
+  }
 }
 
 variable "identity_provider_mappers" {
@@ -222,7 +239,8 @@ variable "smtp_settings" {
     from_display = optional(string)
   }))
 
-  default = []
+  default   = []
+  sensitive = true
 }
 
 variable "password_policies" {
@@ -402,7 +420,16 @@ variable "ldap_user_federations" {
     start_tls               = optional(bool)
   }))
 
-  default = []
+  default   = []
+  sensitive = true
+
+  validation {
+    condition = alltrue([
+      for f in var.ldap_user_federations :
+      f.vendor == null || contains(["ad", "rhds", "other"], f.vendor)
+    ])
+    error_message = "ldap_user_federations[*].vendor must be one of \"ad\", \"rhds\" or \"other\" when set."
+  }
 }
 
 variable "kerberos_user_federations" {
