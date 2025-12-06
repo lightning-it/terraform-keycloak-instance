@@ -376,3 +376,50 @@ variable "token_settings" {
 
   default = []
 }
+
+variable "ldap_user_federations" {
+  description = "LDAP user federation providers per realm."
+  type = list(object({
+    realm                         = string
+    name                          = string
+    enabled                       = optional(bool)
+    priority                      = optional(number)
+    edit_mode                     = optional(string)
+    import_enabled                = optional(bool)
+    sync_registrations            = optional(bool)
+    vendor                        = optional(string)
+    username_ldap_attribute       = optional(string)
+    rdn_ldap_attribute            = optional(string)
+    uuid_ldap_attribute           = optional(string)
+    user_object_classes           = optional(list(string))
+    connection_url                = string
+    users_dn                      = string
+    bind_dn                       = optional(string)
+    bind_credential               = optional(string)
+    use_truststore_spi            = optional(string)
+    trust_email                   = optional(bool)
+    pagination                    = optional(bool)
+    allow_kerberos_authentication = optional(bool)
+  }))
+
+  default = []
+}
+
+variable "kerberos_user_federations" {
+  description = "Kerberos user federation providers per realm."
+  type = list(object({
+    realm                      = string
+    name                       = string
+    enabled                    = optional(bool)
+    priority                   = optional(number)
+    kerberos_realm             = string
+    server_principal           = string
+    key_tab                    = string
+    debug                      = optional(bool)
+    allow_password_auth        = optional(bool)
+    allow_kerberos_auth        = optional(bool)
+    update_profile_first_login = optional(bool)
+  }))
+
+  default = []
+}

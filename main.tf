@@ -265,6 +265,16 @@ locals {
     for t in var.token_settings :
     t.realm => t
   }
+
+  ldap_user_federations = {
+    for f in var.ldap_user_federations :
+    "${f.realm}/${f.name}" => f
+  }
+
+  kerberos_user_federations = {
+    for f in var.kerberos_user_federations :
+    "${f.realm}/${f.name}" => f
+  }
 }
 
 resource "keycloak_realm" "this" {
@@ -366,6 +376,53 @@ resource "keycloak_realm_events" "this" {
   enabled_event_types          = try(each.value.enabled_event_types, null)
   admin_events_enabled         = try(each.value.admin_events_enabled, null)
   admin_events_details_enabled = try(each.value.admin_events_details_enabled, null)
+}
+
+resource "keycloak_ldap_user_federation" "this" {
+  for_each = local.ldap_user_federations
+
+  realm_id                = keycloak_realm.this[each.value.realm].id
+  name                    = each.value.name
+  enabled                 = coalesce(try(each.value.enabled, null), true)
+  priority                = try(each.value.priority, null)
+  edit_mode               = try(each.value.edit_mode, null)
+  import_enabled          = try(each.value.import_enabled, null)
+  sync_registrations      = try(each.value.sync_registrations, null)
+  vendor                  = try(each.value.vendor, null)
+  username_ldap_attribute = try(each.value.username_ldap_attribute, null)
+  rdn_ldap_attribute      = try(each.value.rdn_ldap_attribute, null)
+  uuid_ldap_attribute     = try(each.value.uuid_ldap_attribute, null)
+  user_object_classes     = try(each.value.user_object_classes, null)
+  connection_url          = each.value.connection_url
+  users_dn                = each.value.users_dn
+  bind_dn                 = try(each.value.bind_dn, null)
+  bind_credential         = try(each.value.bind_credential, null)
+  use_truststore_spi      = try(each.value.use_truststore_spi, null)
+  trust_email             = try(each.value.trust_email, null)
+  pagination              = try(each.value.pagination, null)
+  start_tls               = try(each.value.allow_kerberos_authentication, null)
+}
+
+resource "keycloak_custom_user_federation" "kerberos" {
+  for_each = local.kerberos_user_federations
+
+  realm_id    = keycloak_realm.this[each.value.realm].id
+  name        = each.value.name
+  provider_id = "kerberos"
+  enabled     = coalesce(try(each.value.enabled, null), true)
+  priority    = try(each.value.priority, null)
+
+  config = {
+    for k, v in {
+      kerberosRealm               = each.value.kerberos_realm
+      serverPrincipal             = each.value.server_principal
+      keyTab                      = each.value.key_tab
+      debug                       = try(each.value.debug, null)
+      allowPasswordAuthentication = try(each.value.allow_password_auth, null)
+      allowKerberosAuthentication = try(each.value.allow_kerberos_auth, null)
+      updateProfileFirstLogin     = try(each.value.update_profile_first_login, null)
+    } : k => tostring(v) if v != null
+  }
 }
 
 resource "keycloak_openid_client_scope" "this" {

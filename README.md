@@ -1,9 +1,8 @@
 # terraform-keycloak-instance
 
-Terraform module for configuring Keycloak realms using the official
+Terraform module for configuring a full Keycloak instance using the official
 [keycloak/keycloak](https://registry.terraform.io/providers/keycloak/keycloak/latest) provider. It gives you a
-declarative, GitOps-friendly foundation for realm setup and can serve as the
-basis for broader instance configuration as needed.
+declarative, GitOps-friendly foundation for realms, clients, roles, groups, users, identity providers, and auth policies.
 
 ## Example usage
 
@@ -42,6 +41,138 @@ module "keycloak_instance" {
 }
 ```
 
+## Example with clients and roles
+
+```hcl
+module "keycloak_instance" {
+  source  = "lightning-it/instance/keycloak"
+  version = "1.0.0"
+
+  realms = [
+    {
+      name         = "demo01"
+      display_name = "Demo 01"
+    }
+  ]
+
+  clients = [
+    {
+      client_id   = "frontend"
+      client_type = "public"
+      realm       = "demo01"
+      name        = "Frontend App"
+    }
+  ]
+
+  realm_roles = [
+    {
+      name        = "platform-admin"
+      realm       = "demo01"
+      description = "Platform administrator"
+    }
+  ]
+
+  client_roles = [
+    {
+      client_id   = "frontend"
+      realm       = "demo01"
+      name        = "app-reader"
+      description = "Read access to frontend app"
+    }
+  ]
+
+  groups = [
+    {
+      name   = "admins"
+      realm  = "demo01"
+      attributes = {
+        team = ["platform"]
+      }
+    }
+  ]
+
+  users = [
+    {
+      username   = "alice"
+      realm      = "demo01"
+      email      = "alice@example.com"
+      first_name = "Alice"
+      last_name  = "Admin"
+      enabled    = true
+      initial_password = {
+        value     = "ChangeMe123!"
+        temporary = true
+      }
+    }
+  ]
+
+  identity_providers = [
+    {
+      name          = "google"
+      alias         = "google"
+      realm         = "demo01"
+      provider_type = "oidc"
+      enabled       = true
+      client_id     = "your-google-client-id"
+      client_secret = "your-google-client-secret"
+      issuer        = "https://accounts.google.com"
+      default_scopes = ["openid", "email", "profile"]
+    }
+  ]
+}
+```
+
+## Example with user federation
+
+```hcl
+module "keycloak_instance" {
+  source  = "lightning-it/instance/keycloak"
+  version = "1.0.0"
+
+  realms = [
+    {
+      name         = "demo01"
+      display_name = "Demo 01"
+    }
+  ]
+
+  ldap_user_federations = [
+    {
+      realm                   = "demo01"
+      name                    = "corp-ldap"
+      enabled                 = true
+      priority                = 0
+      vendor                  = "ad"
+      connection_url          = "ldaps://ldap.example.com:636"
+      users_dn                = "ou=Users,dc=example,dc=com"
+      bind_dn                 = "cn=bind-user,dc=example,dc=com"
+      bind_credential         = "change-me"
+      username_ldap_attribute = "sAMAccountName"
+      rdn_ldap_attribute      = "cn"
+      uuid_ldap_attribute     = "objectGUID"
+      user_object_classes     = ["person", "organizationalPerson", "user"]
+      import_enabled          = true
+      sync_registrations      = false
+    }
+  ]
+
+  kerberos_user_federations = [
+    {
+      realm                      = "demo01"
+      name                       = "corp-kerberos"
+      enabled                    = true
+      priority                   = 1
+      kerberos_realm             = "EXAMPLE.COM"
+      server_principal           = "HTTP/keycloak.example.com@EXAMPLE.COM"
+      key_tab                    = "/etc/keytabs/keycloak.keytab"
+      allow_password_auth        = false
+      allow_kerberos_auth        = true
+      update_profile_first_login = true
+    }
+  ]
+}
+```
+
 ## Testing
 
 For local testing against a Dockerized Keycloak 26 instance:
@@ -57,9 +188,7 @@ This will:
 
 ## Future scope
 
-Today this module focuses on realm configuration as a clean, reusable foundation.
-The planned scope includes clients, client scopes, roles and mappings, groups,
-users and service accounts, identity providers, and auth policies.
+The module started as realms-only and now covers clients, client scopes, roles and mappings, groups and defaults, users and service accounts, identity providers, auth policies, themes, events, and sessions. Future ideas include opinionated blueprints and more advanced policy patterns built on these building blocks.
 
 If you tell me you’re ready to move from “realms-only” to the fuller scope
 (clients, roles, users, IdPs, etc.), we can turn those Codex prompts into a concrete
@@ -88,10 +217,12 @@ No modules.
 | Name | Type |
 |------|------|
 | [keycloak_custom_identity_provider_mapper.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/custom_identity_provider_mapper) | resource |
+| [keycloak_custom_user_federation.kerberos](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/custom_user_federation) | resource |
 | [keycloak_default_groups.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/default_groups) | resource |
 | [keycloak_generic_protocol_mapper.client_scope](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/generic_protocol_mapper) | resource |
 | [keycloak_group.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/group) | resource |
 | [keycloak_group_roles.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/group_roles) | resource |
+| [keycloak_ldap_user_federation.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/ldap_user_federation) | resource |
 | [keycloak_oidc_identity_provider.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/oidc_identity_provider) | resource |
 | [keycloak_openid_client.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client) | resource |
 | [keycloak_openid_client_default_scopes.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client_default_scopes) | resource |
@@ -124,6 +255,8 @@ No modules.
 | <a name="input_groups"></a> [groups](#input\_groups) | List of Keycloak groups to create, including optional attributes and hierarchy. | <pre>list(object({<br/>    name       = string<br/>    realm      = optional(string)<br/>    parent     = optional(string)<br/>    attributes = optional(map(list(string)))<br/>    path       = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_provider_mappers"></a> [identity\_provider\_mappers](#input\_identity\_provider\_mappers) | List of identity provider mappers to map external attributes/claims into Keycloak. | <pre>list(object({<br/>    identity_provider_alias = string<br/>    realm                   = optional(string)<br/>    name                    = string<br/>    mapper_type             = string<br/>    config                  = optional(map(string))<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_providers"></a> [identity\_providers](#input\_identity\_providers) | List of identity providers (OIDC/SAML) to configure for this Keycloak instance. | <pre>list(object({<br/>    name               = string<br/>    realm              = optional(string)<br/>    provider_type      = string<br/>    enabled            = optional(bool)<br/>    alias              = optional(string)<br/>    display_name       = optional(string)<br/>    trust_email        = optional(bool)<br/>    store_token        = optional(bool)<br/>    link_only          = optional(bool)<br/>    hide_on_login_page = optional(bool)<br/><br/>    # OIDC-specific<br/>    client_id         = optional(string)<br/>    client_secret     = optional(string)<br/>    authorization_url = optional(string)<br/>    token_url         = optional(string)<br/>    userinfo_url      = optional(string)<br/>    issuer            = optional(string)<br/>    jwks_url          = optional(string)<br/>    default_scopes    = optional(list(string))<br/><br/>    # SAML-specific<br/>    single_sign_on_service_url = optional(string)<br/>    single_logout_service_url  = optional(string)<br/>    entity_id                  = optional(string)<br/>    x509_certificate           = optional(string)<br/>    name_id_policy_format      = optional(string)<br/>    force_authn                = optional(bool)<br/>  }))</pre> | `[]` | no |
+| <a name="input_kerberos_user_federations"></a> [kerberos\_user\_federations](#input\_kerberos\_user\_federations) | Kerberos user federation providers per realm. | <pre>list(object({<br/>    realm                      = string<br/>    name                       = string<br/>    enabled                    = optional(bool)<br/>    priority                   = optional(number)<br/>    kerberos_realm             = string<br/>    server_principal           = string<br/>    key_tab                    = string<br/>    debug                      = optional(bool)<br/>    allow_password_auth        = optional(bool)<br/>    allow_kerberos_auth        = optional(bool)<br/>    update_profile_first_login = optional(bool)<br/>  }))</pre> | `[]` | no |
+| <a name="input_ldap_user_federations"></a> [ldap\_user\_federations](#input\_ldap\_user\_federations) | LDAP user federation providers per realm. | <pre>list(object({<br/>    realm                         = string<br/>    name                          = string<br/>    enabled                       = optional(bool)<br/>    priority                      = optional(number)<br/>    edit_mode                     = optional(string)<br/>    import_enabled                = optional(bool)<br/>    sync_registrations            = optional(bool)<br/>    vendor                        = optional(string)<br/>    username_ldap_attribute       = optional(string)<br/>    rdn_ldap_attribute            = optional(string)<br/>    uuid_ldap_attribute           = optional(string)<br/>    user_object_classes           = optional(list(string))<br/>    connection_url                = string<br/>    users_dn                      = string<br/>    bind_dn                       = optional(string)<br/>    bind_credential               = optional(string)<br/>    use_truststore_spi            = optional(string)<br/>    trust_email                   = optional(bool)<br/>    pagination                    = optional(bool)<br/>    allow_kerberos_authentication = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_localization_settings"></a> [localization\_settings](#input\_localization\_settings) | Localization settings per realm (internationalization and locales). | <pre>list(object({<br/>    realm                        = string<br/>    internationalization_enabled = optional(bool)<br/>    supported_locales            = optional(list(string))<br/>    default_locale               = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_otp_settings"></a> [otp\_settings](#input\_otp\_settings) | OTP/MFA configuration per realm. | <pre>list(object({<br/>    realm                 = string<br/>    otp_type              = optional(string)<br/>    otp_alg               = optional(string)<br/>    otp_digits            = optional(number)<br/>    otp_initial_counter   = optional(number)<br/>    otp_look_ahead_window = optional(number)<br/>    otp_period            = optional(number)<br/>  }))</pre> | `[]` | no |
 | <a name="input_password_policies"></a> [password\_policies](#input\_password\_policies) | Password policies per realm. | <pre>list(object({<br/>    realm    = string<br/>    policies = list(string)<br/>  }))</pre> | `[]` | no |
@@ -149,6 +282,8 @@ No modules.
 | <a name="output_groups"></a> [groups](#output\_groups) | Map of configured groups keyed by "<realm>/<name>". |
 | <a name="output_identity_provider_mappers"></a> [identity\_provider\_mappers](#output\_identity\_provider\_mappers) | Map of identity provider mappers keyed by "<realm>/<alias>/<name>". |
 | <a name="output_identity_providers"></a> [identity\_providers](#output\_identity\_providers) | Map of configured identity providers keyed by "<realm>/<alias>". |
+| <a name="output_kerberos_user_federations"></a> [kerberos\_user\_federations](#output\_kerberos\_user\_federations) | Map of Kerberos user federation providers keyed by "<realm>/<name>". |
+| <a name="output_ldap_user_federations"></a> [ldap\_user\_federations](#output\_ldap\_user\_federations) | Map of LDAP user federation providers keyed by "<realm>/<name>". |
 | <a name="output_localization_settings"></a> [localization\_settings](#output\_localization\_settings) | Localization settings per realm. |
 | <a name="output_realm_roles"></a> [realm\_roles](#output\_realm\_roles) | Map of configured realm roles keyed by "<realm>:<role\_name>". |
 | <a name="output_realms"></a> [realms](#output\_realms) | Map of managed realms, keyed by realm name. |
