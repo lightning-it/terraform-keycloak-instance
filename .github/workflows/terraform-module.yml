@@ -41,9 +41,10 @@ jobs:
       - name: Terraform validate (module root)
         run: terraform validate
 
-      # 6) Test setup like tests/keycloak-local
-      - name: Terraform validate (keycloak-local test)
-        working-directory: tests/keycloak-local
+      # 6) Validate test fixtures (smoke/advanced/empty)
+      - name: Terraform validate (test fixtures)
         run: |
-          terraform init -backend=false
-          terraform validate
+          for dir in tests/keycloak-smoke tests/keycloak-advanced tests/keycloak-empty; do
+            terraform -chdir="$dir" init -backend=false
+            terraform -chdir="$dir" validate
+          done
