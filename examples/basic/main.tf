@@ -9,18 +9,18 @@ terraform {
   }
 }
 
-module "keycloak_platform" {
+module "keycloak_instance" {
   # Use the local module in the repo root
   source = "../.."
 
   realms = [
     {
-      name         = "tier0"
-      display_name = "TIER0"
+      name         = "demo01"
+      display_name = "Demo 01"
     },
     {
-      name         = "tier1"
-      display_name = "TIER1"
+      name         = "demo02"
+      display_name = "Demo 02"
     }
   ]
 }

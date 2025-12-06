@@ -1,12 +1,9 @@
 # terraform-keycloak-instance
 
-Terraform module for configuring a full Keycloak instance with realms, clients,
-scopes, roles, groups, users, service accounts, and identity providers using the official
-[keycloak/keycloak](https://registry.terraform.io/providers/keycloak/keycloak/latest) provider.
-
-This module provides a declarative, GitOps-friendly way to manage base realms,
-clients and scopes, attach realm/client roles to users and groups, seed users,
-configure client service accounts, and integrate external identity providers.
+Terraform module for configuring Keycloak realms using the official
+[keycloak/keycloak](https://registry.terraform.io/providers/keycloak/keycloak/latest) provider. It gives you a
+declarative, GitOps-friendly foundation for realm setup and can serve as the
+basis for broader instance configuration as needed.
 
 ## Example usage
 
@@ -15,7 +12,7 @@ terraform {
   required_providers {
     keycloak = {
       source  = "keycloak/keycloak"
-      version = "~> 5.5"
+      version = "~> 5.0"
     }
   }
   required_version = ">= 1.6.0, < 2.0.0"
@@ -30,277 +27,43 @@ provider "keycloak" {
 
 module "keycloak_instance" {
   source  = "lightning-it/instance/keycloak"
-  version = "1.0.0" # or the current release
+  version = "1.0.0" # or the current version
 
   realms = [
     {
-      name         = "tier0"
-      display_name = "TIER0"
-    }
-  ]
-
-  clients = [
-    {
-      client_id                    = "frontend"
-      client_type                  = "public"
-      realm                        = "tier0"
-      name                         = "Frontend SPA"
-      redirect_uris                = ["https://app.example.com/*"]
-      web_origins                  = ["+"]
-      standard_flow_enabled        = true
-      implicit_flow_enabled        = false
-      direct_access_grants_enabled = false
-      default_scopes               = ["profile", "email", "app-profile"]
-      optional_scopes              = ["address"]
+      name         = "demo01"
+      display_name = "Demo 01"
     },
     {
-      client_id                    = "backend-api"
-      client_type                  = "confidential"
-      realm                        = "tier0"
-      name                         = "Backend API"
-      service_accounts_enabled     = true
-      direct_access_grants_enabled = false
-      standard_flow_enabled        = false
-      implicit_flow_enabled        = false
-      default_scopes               = ["profile", "email"]
-    }
-  ]
-
-  client_scopes = [
-    {
-      name        = "app-profile"
-      realm       = "tier0"
-      description = "Expose app-specific profile data"
-      protocol    = "openid-connect"
-
-      mappers = [
-        {
-          name            = "app_role"
-          protocol_mapper = "oidc-usermodel-attribute-mapper"
-          config = {
-            "user.attribute"       = "app_role"
-            "claim.name"           = "app_role"
-            "jsonType.label"       = "String"
-            "id.token.claim"       = "true"
-            "access.token.claim"   = "true"
-            "userinfo.token.claim" = "true"
-          }
-        }
-      ]
-    }
-  ]
-
-  realm_roles = [
-    {
-      name        = "platform-admin"
-      realm       = "tier0"
-      description = "Platform administrator"
-    },
-    {
-      name        = "platform-service"
-      realm       = "tier0"
-      description = "Platform service role"
-    }
-  ]
-
-  client_roles = [
-    {
-      client_id   = "frontend"
-      realm       = "tier0"
-      name        = "app-reader"
-      description = "Read access to frontend app"
-    }
-  ]
-
-  role_bindings = [
-    {
-      realm       = "tier0"
-      username    = "alice"
-      realm_roles = ["platform-admin"]
-    },
-    {
-      realm        = "tier0"
-      group_name   = "developers"
-      client_roles = {
-        frontend = ["app-reader"]
-      }
-    }
-  ]
-
-  groups = [
-    {
-      name   = "admins"
-      realm  = "tier0"
-      attributes = {
-        team = ["platform"]
-      }
-    },
-    {
-      name   = "users"
-      realm  = "tier0"
-    },
-    {
-      name   = "developers"
-      realm  = "tier0"
-      parent = "users"
-    }
-  ]
-
-  default_groups = [
-    {
-      realm = "tier0"
-      names = ["users"]
-    }
-  ]
-
-  users = [
-    {
-      username   = "alice"
-      realm      = "tier0"
-      email      = "alice@example.com"
-      first_name = "Alice"
-      last_name  = "Admin"
-      enabled    = true
-      attributes = {
-        department = ["platform"]
-      }
-      initial_password = {
-        value     = "ChangeMe123!"
-        temporary = true
-      }
-    }
-  ]
-
-  service_accounts = [
-    {
-      client_id   = "backend-api"
-      realm       = "tier0"
-      enabled     = true
-      realm_roles = ["platform-service"]
-    }
-  ]
-
-  identity_providers = [
-    {
-      name          = "google"
-      alias         = "google"
-      realm         = "tier0"
-      provider_type = "oidc"
-      enabled       = true
-      display_name  = "Google"
-      trust_email   = true
-      store_token   = false
-
-      client_id      = "your-google-client-id"
-      client_secret  = "your-google-client-secret"
-      issuer         = "https://accounts.google.com"
-      default_scopes = ["openid", "email", "profile"]
-    }
-  ]
-
-  identity_provider_mappers = [
-    {
-      identity_provider_alias = "google"
-      realm                   = "tier0"
-      name                    = "google-email-to-username"
-      mapper_type             = "oidc-user-attribute-idp-mapper"
-      config = {
-        "syncMode"       = "IMPORT"
-        "claim"          = "email"
-        "user.attribute" = "email"
-      }
-    }
-  ]
-
-  smtp_settings = [
-    {
-      realm        = "tier0"
-      host         = "smtp.example.com"
-      port         = 587
-      from         = "no-reply@example.com"
-      starttls     = true
-      from_display = "Example Platform"
-    }
-  ]
-
-  password_policies = [
-    {
-      realm    = "tier0"
-      policies = ["length(10)", "digits(1)", "lowerCase(1)", "upperCase(1)"]
-    }
-  ]
-
-  bruteforce_settings = [
-    {
-      realm                            = "tier0"
-      enabled                          = true
-      permanent_lockout                = false
-      max_login_failures               = 5
-      wait_increment_seconds           = 60
-      quick_login_check_milli          = 1000
-      minimum_quick_login_wait_seconds = 60
-      max_failure_wait_seconds         = 900
-      failure_reset_time_seconds       = 3600
-    }
-  ]
-
-  auth_flow_settings = [
-    {
-      realm                        = "tier0"
-      login_with_email_allowed     = true
-      remember_me                  = true
-      verify_email                 = true
-      registration_allowed         = false
-      registration_email_as_username = false
-    }
-  ]
-
-  otp_settings = [
-    {
-      realm                 = "tier0"
-      otp_type              = "totp"
-      otp_alg               = "HmacSHA1"
-      otp_digits            = 6
-      otp_period            = 30
-      otp_look_ahead_window = 1
-    }
-  ]
-
-  event_settings = [
-    {
-      realm                        = "tier0"
-      events_enabled               = true
-      events_expiration            = 3600
-      events_listeners             = ["jboss-logging", "custom-webhook"]
-      enabled_event_types          = ["LOGIN", "LOGOUT", "REGISTER"]
-      admin_events_enabled         = true
-      admin_events_details_enabled = true
-    }
-  ]
-
-  session_settings = [
-    {
-      realm                        = "tier0"
-      sso_session_idle_timeout     = 3600      # 1 hour
-      sso_session_max_lifespan     = 28800     # 8 hours
-      offline_session_idle_timeout = 2592000   # 30 days
-      offline_session_max_lifespan = 2592000   # 30 days
-    }
-  ]
-
-  token_settings = [
-    {
-      realm                          = "tier0"
-      access_token_lifespan          = 900      # 15 minutes
-      access_token_lifespan_for_implicit_flow = 600
-      client_session_idle_timeout    = 3600
-      client_session_max_lifespan    = 28800
-      login_timeout                  = 300      # 5 minutes
-      login_action_timeout           = 300
+      name         = "demo02"
+      display_name = "Demo 02"
     }
   ]
 }
 ```
+
+## Testing
+
+For local testing against a Dockerized Keycloak 26 instance:
+
+```bash
+make test-local
+```
+
+This will:
+- start a local Keycloak container (tests/keycloak-local/docker-compose.yml)
+- run terraform init and terraform apply in tests/keycloak-local via the container-wunder-devtools-ee image
+- tear down the Keycloak container again
+
+## Future scope
+
+Today this module focuses on realm configuration as a clean, reusable foundation.
+The planned scope includes clients, client scopes, roles and mappings, groups,
+users and service accounts, identity providers, and auth policies.
+
+If you tell me you’re ready to move from “realms-only” to the fuller scope
+(clients, roles, users, IdPs, etc.), we can turn those Codex prompts into a concrete
+plan for how to grow this module in a way that still feels clean and maintainable.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

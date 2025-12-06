@@ -19,14 +19,14 @@ provider "keycloak" {
   password  = "admin"
 }
 
-module "keycloak_platform" {
+module "keycloak_instance" {
   # Modul im Repo-Root
   source = "../.."
 
   realms = [
     {
-      name         = "tier0"
-      display_name = "TIER0"
+      name         = "demo01"
+      display_name = "DEMO01"
     }
   ]
 }
