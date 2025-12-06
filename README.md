@@ -193,40 +193,21 @@ maintainable.
 
 ## Providers
 
-| Name | Version |
-|------|---------|
-| <a name="provider_keycloak"></a> [keycloak](#provider\_keycloak) | 5.5.0 |
+No providers.
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_clients"></a> [clients](#module\_clients) | ./modules/clients | n/a |
+| <a name="module_groups_users"></a> [groups\_users](#module\_groups\_users) | ./modules/groups_users | n/a |
+| <a name="module_idps_federation"></a> [idps\_federation](#module\_idps\_federation) | ./modules/idps_federation | n/a |
+| <a name="module_realms"></a> [realms](#module\_realms) | ./modules/realms | n/a |
+| <a name="module_roles"></a> [roles](#module\_roles) | ./modules/roles | n/a |
 
 ## Resources
 
-| Name | Type |
-|------|------|
-| [keycloak_custom_identity_provider_mapper.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/custom_identity_provider_mapper) | resource |
-| [keycloak_custom_user_federation.kerberos](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/custom_user_federation) | resource |
-| [keycloak_default_groups.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/default_groups) | resource |
-| [keycloak_generic_protocol_mapper.client_scope](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/generic_protocol_mapper) | resource |
-| [keycloak_group.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/group) | resource |
-| [keycloak_group_roles.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/group_roles) | resource |
-| [keycloak_ldap_user_federation.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/ldap_user_federation) | resource |
-| [keycloak_oidc_identity_provider.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/oidc_identity_provider) | resource |
-| [keycloak_openid_client.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client) | resource |
-| [keycloak_openid_client_default_scopes.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client_default_scopes) | resource |
-| [keycloak_openid_client_optional_scopes.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client_optional_scopes) | resource |
-| [keycloak_openid_client_scope.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/openid_client_scope) | resource |
-| [keycloak_realm.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/realm) | resource |
-| [keycloak_realm_events.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/realm_events) | resource |
-| [keycloak_role.client](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/role) | resource |
-| [keycloak_role.realm](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/role) | resource |
-| [keycloak_saml_identity_provider.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/saml_identity_provider) | resource |
-| [keycloak_user.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/user) | resource |
-| [keycloak_user_roles.service_accounts](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/user_roles) | resource |
-| [keycloak_user_roles.this](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/resources/user_roles) | resource |
-| [keycloak_group.by_name](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/data-sources/group) | data source |
-| [keycloak_user.by_username](https://registry.terraform.io/providers/keycloak/keycloak/latest/docs/data-sources/user) | data source |
+No resources.
 
 ## Inputs
 

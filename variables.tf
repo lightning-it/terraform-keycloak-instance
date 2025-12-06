@@ -426,7 +426,7 @@ variable "ldap_user_federations" {
   validation {
     condition = alltrue([
       for f in var.ldap_user_federations :
-      f.vendor == null || contains(["ad", "rhds", "other"], f.vendor)
+      f.vendor == null || contains(["ad", "rhds", "other"], lower(f.vendor))
     ])
     error_message = "ldap_user_federations[*].vendor must be one of \"ad\", \"rhds\" or \"other\" when set."
   }
