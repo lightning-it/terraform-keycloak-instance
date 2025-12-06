@@ -163,6 +163,36 @@ locals {
     })
     if coalesce(try(sa.realm, null), try(local.clients[sa.client_id].realm, null), local.default_realm) != null
   }
+
+  identity_providers = {
+    for idp in var.identity_providers :
+    "${coalesce(try(idp.realm, null), local.default_realm)}/${coalesce(try(idp.alias, null), idp.name)}" => merge(idp, {
+      realm         = coalesce(try(idp.realm, null), local.default_realm)
+      alias         = coalesce(try(idp.alias, null), idp.name)
+      enabled       = coalesce(try(idp.enabled, null), true)
+      provider_type = lower(idp.provider_type)
+    })
+    if coalesce(try(idp.realm, null), local.default_realm) != null
+  }
+
+  oidc_identity_providers = {
+    for k, v in local.identity_providers :
+    k => v if v.provider_type == "oidc"
+  }
+
+  saml_identity_providers = {
+    for k, v in local.identity_providers :
+    k => v if v.provider_type == "saml"
+  }
+
+  identity_provider_mappers = {
+    for m in var.identity_provider_mappers :
+    "${coalesce(try(m.realm, null), local.default_realm)}/${m.identity_provider_alias}/${m.name}" => merge(m, {
+      realm  = coalesce(try(m.realm, null), local.default_realm)
+      config = coalesce(try(m.config, null), {})
+    })
+    if coalesce(try(m.realm, null), local.default_realm) != null
+  }
 }
 
 resource "keycloak_realm" "this" {
@@ -406,4 +436,57 @@ resource "keycloak_user_roles" "service_accounts" {
       ]
     ])
   ))
+}
+
+resource "keycloak_oidc_identity_provider" "this" {
+  for_each = local.oidc_identity_providers
+
+  realm              = each.value.realm
+  alias              = each.value.alias
+  enabled            = each.value.enabled
+  display_name       = try(each.value.display_name, null)
+  trust_email        = coalesce(try(each.value.trust_email, null), false)
+  store_token        = coalesce(try(each.value.store_token, null), false)
+  link_only          = coalesce(try(each.value.link_only, null), false)
+  hide_on_login_page = coalesce(try(each.value.hide_on_login_page, null), false)
+
+  client_id     = try(each.value.client_id, null)
+  client_secret = try(each.value.client_secret, null)
+
+  authorization_url = try(each.value.authorization_url, null)
+  token_url         = try(each.value.token_url, null)
+  user_info_url     = try(each.value.userinfo_url, null)
+  issuer            = try(each.value.issuer, null)
+  jwks_url          = try(each.value.jwks_url, null)
+  default_scopes    = coalesce(try(each.value.default_scopes, null), [])
+}
+
+resource "keycloak_saml_identity_provider" "this" {
+  for_each = local.saml_identity_providers
+
+  realm              = each.value.realm
+  alias              = each.value.alias
+  enabled            = each.value.enabled
+  display_name       = try(each.value.display_name, null)
+  trust_email        = coalesce(try(each.value.trust_email, null), false)
+  store_token        = coalesce(try(each.value.store_token, null), false)
+  link_only          = coalesce(try(each.value.link_only, null), false)
+  hide_on_login_page = coalesce(try(each.value.hide_on_login_page, null), false)
+
+  entity_id                  = try(each.value.entity_id, null)
+  single_sign_on_service_url = try(each.value.single_sign_on_service_url, null)
+  single_logout_service_url  = try(each.value.single_logout_service_url, null)
+  name_id_policy_format      = try(each.value.name_id_policy_format, null)
+  force_authn                = coalesce(try(each.value.force_authn, null), false)
+  signing_certificate        = try(each.value.x509_certificate, null)
+}
+
+resource "keycloak_custom_identity_provider_mapper" "this" {
+  for_each = local.identity_provider_mappers
+
+  realm                    = each.value.realm
+  name                     = each.value.name
+  identity_provider_alias  = each.value.identity_provider_alias
+  identity_provider_mapper = each.value.mapper_type
+  extra_config             = each.value.config
 }
