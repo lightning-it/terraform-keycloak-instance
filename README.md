@@ -1,8 +1,18 @@
 # terraform-keycloak-instance
 
 Terraform module for configuring a full Keycloak instance using the official
-[keycloak/keycloak](https://registry.terraform.io/providers/keycloak/keycloak/latest) provider. It gives you a
-declarative, GitOps-friendly foundation for realms, clients, roles, groups, users, identity providers, and auth policies.
+[keycloak/keycloak](https://registry.terraform.io/providers/keycloak/keycloak/latest) provider. It provides a declarative,
+GitOps-friendly way to manage realms, clients and client scopes, roles and bindings, groups and defaults, users and
+service accounts, identity providers, user federation, auth policies (SMTP, password, brute force, OTP), themes,
+localization, events, and sessions.
+
+## Use cases
+
+- Provision base realms (e.g. demo01/demo02) and platform tenants as code
+- Manage clients, client scopes, roles, and role bindings with repeatable Terraform plans
+- Define groups, default groups, and user/service account assignments consistently across environments
+- Integrate with existing identity directories via LDAP/Kerberos user federation
+- Enforce consistent auth and session policies (SMTP, password/OTP, brute-force detection, events, and timeouts)
 
 ## Example usage
 
@@ -173,6 +183,139 @@ module "keycloak_instance" {
 }
 ```
 
+## Advanced example
+
+```hcl
+module "keycloak_instance" {
+  source  = "lightning-it/instance/keycloak"
+  version = "1.0.0"
+
+  realms = [
+    {
+      name         = "demo01"
+      display_name = "Demo 01"
+    }
+  ]
+
+  clients = [
+    {
+      client_id                = "backend-api"
+      client_type              = "confidential"
+      realm                    = "demo01"
+      name                     = "Backend API"
+      service_accounts_enabled = true
+    }
+  ]
+
+  client_roles = [
+    {
+      client_id   = "backend-api"
+      realm       = "demo01"
+      name        = "api-reader"
+      description = "Read access to backend API"
+    }
+  ]
+
+  realm_roles = [
+    {
+      name        = "platform-admin"
+      realm       = "demo01"
+      description = "Platform administrator"
+    }
+  ]
+
+  groups = [
+    {
+      name   = "admins"
+      realm  = "demo01"
+      attributes = {
+        team = ["platform"]
+      }
+    }
+  ]
+
+  default_groups = [
+    {
+      realm = "demo01"
+      names = ["admins"]
+    }
+  ]
+
+  users = [
+    {
+      username   = "alice"
+      realm      = "demo01"
+      email      = "alice@example.com"
+      first_name = "Alice"
+      last_name  = "Admin"
+      enabled    = true
+      initial_password = {
+        value     = "ChangeMe123!"
+        temporary = true
+      }
+    }
+  ]
+
+  role_bindings = [
+    {
+      realm       = "demo01"
+      username    = "alice"
+      realm_roles = ["platform-admin"]
+      client_roles = {
+        backend-api = ["api-reader"]
+      }
+    }
+  ]
+
+  ldap_user_federations = [
+    {
+      realm                   = "demo01"
+      name                    = "corp-ldap"
+      enabled                 = true
+      priority                = 0
+      vendor                  = "ad"
+      connection_url          = "ldaps://ldap.example.com:636"
+      users_dn                = "ou=Users,dc=example,dc=com"
+      bind_dn                 = "cn=bind-user,dc=example,dc=com"
+      bind_credential         = "change-me"
+      username_ldap_attribute = "sAMAccountName"
+      rdn_ldap_attribute      = "cn"
+      uuid_ldap_attribute     = "objectGUID"
+      user_object_classes     = ["person", "organizationalPerson", "user"]
+      import_enabled          = true
+      sync_registrations      = false
+      start_tls               = true
+    }
+  ]
+
+  password_policies = [
+    {
+      realm    = "demo01"
+      policies = ["length(12)", "digits(1)", "upperCase(1)", "lowerCase(1)", "specialChars(1)"]
+    }
+  ]
+
+  event_settings = [
+    {
+      realm                        = "demo01"
+      events_enabled               = true
+      events_listeners             = ["jboss-logging"]
+      admin_events_enabled         = true
+      admin_events_details_enabled = true
+    }
+  ]
+
+  session_settings = [
+    {
+      realm                      = "demo01"
+      sso_session_idle_timeout   = 3600
+      sso_session_max_lifespan   = 28800
+      offline_session_idle_timeout = 2592000
+    }
+  ]
+}
+```
+
 ## Testing
 
 For local testing against a Dockerized Keycloak 26 instance:
@@ -188,7 +331,16 @@ This will:
 
 ## Future scope
 
-The module started as realms-only and now covers clients, client scopes, roles and mappings, groups and defaults, users and service accounts, identity providers, auth policies, themes, events, and sessions. Future ideas include opinionated blueprints and more advanced policy patterns built on these building blocks.
+This module started as realms-only and now covers clients and client scopes, roles and role bindings, groups and defaults,
+users and service accounts, identity providers, auth policies, themes, events, sessions, and user federation.
+
+Future ideas may include:
+
+- user federation mappers and finer-grained sync controls
+- user profile configuration and custom attributes
+- custom authentication flows and executions
+- client authorization services and opinionated policy blueprints
+- keystore and certificate management patterns
 
 If you tell me you’re ready to move from “realms-only” to the fuller scope
 (clients, roles, users, IdPs, etc.), we can turn those Codex prompts into a concrete

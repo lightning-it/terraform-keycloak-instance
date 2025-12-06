@@ -381,26 +381,27 @@ resource "keycloak_realm_events" "this" {
 resource "keycloak_ldap_user_federation" "this" {
   for_each = local.ldap_user_federations
 
-  realm_id                = keycloak_realm.this[each.value.realm].id
-  name                    = each.value.name
-  enabled                 = coalesce(try(each.value.enabled, null), true)
-  priority                = try(each.value.priority, null)
-  edit_mode               = try(each.value.edit_mode, null)
-  import_enabled          = try(each.value.import_enabled, null)
-  sync_registrations      = try(each.value.sync_registrations, null)
-  vendor                  = try(each.value.vendor, null)
-  username_ldap_attribute = try(each.value.username_ldap_attribute, null)
-  rdn_ldap_attribute      = try(each.value.rdn_ldap_attribute, null)
-  uuid_ldap_attribute     = try(each.value.uuid_ldap_attribute, null)
-  user_object_classes     = try(each.value.user_object_classes, null)
-  connection_url          = each.value.connection_url
-  users_dn                = each.value.users_dn
-  bind_dn                 = try(each.value.bind_dn, null)
-  bind_credential         = try(each.value.bind_credential, null)
-  use_truststore_spi      = try(each.value.use_truststore_spi, null)
-  trust_email             = try(each.value.trust_email, null)
-  pagination              = try(each.value.pagination, null)
-  start_tls               = try(each.value.allow_kerberos_authentication, null)
+  realm_id                      = keycloak_realm.this[each.value.realm].id
+  name                          = each.value.name
+  enabled                       = coalesce(try(each.value.enabled, null), true)
+  priority                      = try(each.value.priority, null)
+  edit_mode                     = try(each.value.edit_mode, null)
+  import_enabled                = try(each.value.import_enabled, null)
+  sync_registrations            = try(each.value.sync_registrations, null)
+  vendor                        = try(each.value.vendor, null)
+  username_ldap_attribute       = try(each.value.username_ldap_attribute, null)
+  rdn_ldap_attribute            = try(each.value.rdn_ldap_attribute, null)
+  uuid_ldap_attribute           = try(each.value.uuid_ldap_attribute, null)
+  user_object_classes           = try(each.value.user_object_classes, null)
+  connection_url                = each.value.connection_url
+  users_dn                      = each.value.users_dn
+  bind_dn                       = try(each.value.bind_dn, null)
+  bind_credential               = try(each.value.bind_credential, null)
+  use_truststore_spi            = try(each.value.use_truststore_spi, null)
+  trust_email                   = try(each.value.trust_email, null)
+  pagination                    = try(each.value.pagination, null)
+  allow_kerberos_authentication = try(each.value.allow_kerberos_authentication, null)
+  start_tls                     = try(each.value.start_tls, null)
 }
 
 resource "keycloak_custom_user_federation" "kerberos" {

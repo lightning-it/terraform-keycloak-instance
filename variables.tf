@@ -400,6 +400,7 @@ variable "ldap_user_federations" {
     trust_email                   = optional(bool)
     pagination                    = optional(bool)
     allow_kerberos_authentication = optional(bool)
+    start_tls                     = optional(bool)
   }))
 
   default = []
