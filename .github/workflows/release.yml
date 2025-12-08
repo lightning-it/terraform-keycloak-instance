@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
   lint:
@@ -12,23 +13,29 @@ jobs:
     permissions:
       contents: read
     steps:
+      # 1) Checkout repository
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2) Install Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
 
+      # 3) Format check in the module root
       - name: Terraform fmt (check)
         run: terraform fmt -check -recursive
 
+      # 4) Init without backend (we are testing a module, no real state)
       - name: Terraform init (module root)
         run: terraform init -backend=false
 
+      # 5) Validate module configuration
       - name: Terraform validate (module root)
         run: terraform validate
 
+      # 6) Validate test fixtures (smoke/advanced/empty)
       - name: Terraform validate (test fixtures)
         run: |
           for dir in tests/keycloak-smoke tests/keycloak-advanced tests/keycloak-empty; do
@@ -36,34 +43,72 @@ jobs:
             terraform -chdir="$dir" validate
           done
 
+      # 7) TFLint across the repo
       - name: TFLint (via wunder-devtools-ee)
         run: bash scripts/wunder-devtools-ee.sh tflint --recursive
 
+  # Real release job: only runs on push to main
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
     needs: lint
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write       # required to create tags and releases
       issues: write         # optional, for release notes references
       pull-requests: write  # optional, for release notes references
-
     steps:
+      # Checkout with full history for semantic-release
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # semantic-release needs full history
 
+      # Setup Node for semantic-release
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
+      # Install Node dependencies from package-lock.json
       - name: Install dependencies
         run: npm ci
 
+      # Run semantic-release (real release)
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
+
+  # Dry-run job: checks semantic-release config on pull requests
+  release_dry_run:
+    name: Semantic Release (dry run)
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      # Checkout with full history to let semantic-release inspect tags/commits
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Setup Node for semantic-release
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Install Node dependencies from package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+      # Run semantic-release in dry-run mode (no tags, no releases, no commits)
+      - name: Run semantic-release (dry run)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release --dry-run --no-ci

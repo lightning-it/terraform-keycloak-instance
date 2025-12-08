@@ -25,6 +25,43 @@
       ],
       "datasourceTemplate": "terraform-version",
       "depNameTemplate": "hashicorp/terraform"
+    },
+    {
+      "fileMatch": [
+        "^\\.github/workflows/release\\.yml$"
+      ],
+      "matchStrings": [
+        "node-version: ['\"]?(?<currentValue>[0-9.]+)['\"]?"
+      ],
+      "datasourceTemplate": "node",
+      "depNameTemplate": "node",
+      "versioningTemplate": "node"
+    }
+  ],
+
+  "packageRules": [
+    {
+      "groupName": "semantic-release toolchain",
+      "description": "Keep semantic-release and its plugins in sync",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "semantic-release",
+        "@semantic-release/changelog",
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/release-notes-generator",
+        "@semantic-release/github",
+        "@semantic-release/git",
+        "conventional-changelog-conventionalcommits"
+      ],
+      "separateMajorMinor": true,
+      "separateMultipleMajor": true
+    },
+    {
+      "description": "Highlight major updates for semantic-release itself",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["semantic-release"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "renovate", "breaking-release-tools"]
     }
   ]
 }
