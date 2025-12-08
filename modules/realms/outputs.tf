@@ -12,7 +12,7 @@ output "realms" {
 output "theme_settings" {
   description = "Effective theme settings per realm."
   value = {
-    for realm, settings in local.theme_settings :
+    for realm, settings in local.normalized_themes :
     realm => {
       login_theme   = try(settings.login_theme, null)
       account_theme = try(settings.account_theme, null)
@@ -25,7 +25,7 @@ output "theme_settings" {
 output "localization_settings" {
   description = "Localization settings per realm."
   value = {
-    for realm, settings in local.localization_settings :
+    for realm, settings in local.normalized_localization :
     realm => {
       internationalization_enabled = coalesce(try(settings.internationalization_enabled, null), true)
       supported_locales            = try(settings.supported_locales, null)
@@ -37,7 +37,7 @@ output "localization_settings" {
 output "event_settings" {
   description = "Event configuration per realm."
   value = {
-    for realm, settings in local.event_settings :
+    for realm, settings in local.normalized_events :
     realm => {
       events_enabled               = try(settings.events_enabled, null)
       events_expiration            = try(settings.events_expiration, null)
@@ -52,7 +52,7 @@ output "event_settings" {
 output "session_settings" {
   description = "Summary of session timeout settings per realm."
   value = {
-    for realm, settings in local.session_settings :
+    for realm, settings in local.normalized_sessions :
     realm => settings
   }
 }
@@ -60,7 +60,7 @@ output "session_settings" {
 output "token_settings" {
   description = "Summary of token timeout settings per realm."
   value = {
-    for realm, settings in local.token_settings :
+    for realm, settings in local.normalized_tokens :
     realm => settings
   }
 }

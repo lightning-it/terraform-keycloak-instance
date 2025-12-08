@@ -58,7 +58,7 @@ output "kerberos_user_federations" {
       id             = f.id
       realm          = f.realm_id
       name           = f.name
-      kerberos_realm = local.kerberos_user_federations[key].kerberos_realm
+      kerberos_realm = local.normalized_kerberos_user_federations[key].kerberos_realm
     }
   }
 }

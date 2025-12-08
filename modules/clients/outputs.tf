@@ -18,7 +18,7 @@ output "client_scopes" {
     name => {
       id       = s.id
       realm    = s.realm_id
-      protocol = local.client_scopes[name].protocol
+      protocol = local.normalized_client_scopes[name].protocol
     }
   }
 }
