@@ -12,7 +12,7 @@ terraform {
 locals {
   default_realm = try(keys(var.realms)[0], null)
 
-  client_scopes = {
+  normalized_client_scopes = {
     for s in var.client_scopes :
     s.name => merge(s, {
       realm    = coalesce(try(s.realm, null), local.default_realm)
@@ -20,8 +20,8 @@ locals {
     })
   }
 
-  client_scope_mappers = flatten([
-    for scope_name, scope in local.client_scopes : [
+  normalized_client_scope_mappers_list = flatten([
+    for scope_name, scope in local.normalized_client_scopes : [
       for mapper in coalesce(try(scope.mappers, null), []) : {
         scope_name = scope_name
         realm      = scope.realm
@@ -31,12 +31,12 @@ locals {
     ]
   ])
 
-  client_scope_mappers_map = {
-    for m in local.client_scope_mappers :
+  normalized_client_scope_mappers = {
+    for m in local.normalized_client_scope_mappers_list :
     "${m.scope_name}:${m.name}" => m
   }
 
-  clients = {
+  normalized_clients = {
     for c in var.clients :
     c.client_id => merge(c, {
       realm = coalesce(try(c.realm, null), local.default_realm)
@@ -44,30 +44,30 @@ locals {
   }
 
   clients_with_default_scopes = {
-    for k, v in local.clients :
+    for k, v in local.normalized_clients :
     k => v if length(coalesce(try(v.default_scopes, null), [])) > 0
   }
 
   clients_with_optional_scopes = {
-    for k, v in local.clients :
+    for k, v in local.normalized_clients :
     k => v if length(coalesce(try(v.optional_scopes, null), [])) > 0
   }
 
-  service_accounts = {
+  normalized_service_accounts = {
     for sa in var.service_accounts :
-    "${coalesce(try(sa.realm, null), try(local.clients[sa.client_id].realm, null), local.default_realm)}/${sa.client_id}" => merge(sa, {
-      realm      = coalesce(try(sa.realm, null), try(local.clients[sa.client_id].realm, null), local.default_realm)
+    "${coalesce(try(sa.realm, null), try(local.normalized_clients[sa.client_id].realm, null), local.default_realm)}/${sa.client_id}" => merge(sa, {
+      realm      = coalesce(try(sa.realm, null), try(local.normalized_clients[sa.client_id].realm, null), local.default_realm)
       enabled    = coalesce(try(sa.enabled, null), true)
       attributes = coalesce(try(sa.attributes, null), {})
     })
-    if coalesce(try(sa.realm, null), try(local.clients[sa.client_id].realm, null), local.default_realm) != null
+    if coalesce(try(sa.realm, null), try(local.normalized_clients[sa.client_id].realm, null), local.default_realm) != null
   }
 
-  service_account_clients = toset([for k, sa in local.service_accounts : sa.client_id])
+  service_account_clients = toset([for k, sa in local.normalized_service_accounts : sa.client_id])
 }
 
 resource "keycloak_openid_client_scope" "this" {
-  for_each = local.client_scopes
+  for_each = local.normalized_client_scopes
 
   realm_id    = var.realms[each.value.realm].id
   name        = each.value.name
@@ -75,7 +75,7 @@ resource "keycloak_openid_client_scope" "this" {
 }
 
 resource "keycloak_generic_protocol_mapper" "client_scope" {
-  for_each = local.client_scope_mappers_map
+  for_each = local.normalized_client_scope_mappers
 
   realm_id        = var.realms[each.value.realm].id
   client_scope_id = keycloak_openid_client_scope.this[each.value.scope_name].id
@@ -95,7 +95,7 @@ resource "keycloak_generic_protocol_mapper" "client_scope" {
 }
 
 resource "keycloak_openid_client" "this" {
-  for_each = local.clients
+  for_each = local.normalized_clients
 
   realm_id    = var.realms[each.value.realm].id
   client_id   = each.value.client_id

@@ -12,7 +12,7 @@ terraform {
 locals {
   default_realm = try(keys(var.realms)[0], null)
 
-  realm_roles = {
+  normalized_realm_roles = {
     for r in var.realm_roles :
     "${coalesce(try(r.realm, null), local.default_realm)}:${r.name}" => merge(r, {
       realm      = coalesce(try(r.realm, null), local.default_realm)
@@ -21,7 +21,7 @@ locals {
     if coalesce(try(r.realm, null), local.default_realm) != null
   }
 
-  client_roles = {
+  normalized_client_roles = {
     for r in var.client_roles :
     "${coalesce(try(r.realm, null), try(var.clients[r.client_id].realm, null), local.default_realm)}:${r.client_id}:${r.name}" => merge(r, {
       realm      = coalesce(try(r.realm, null), try(var.clients[r.client_id].realm, null), local.default_realm)
@@ -32,7 +32,7 @@ locals {
 }
 
 resource "keycloak_role" "realm" {
-  for_each = local.realm_roles
+  for_each = local.normalized_realm_roles
 
   realm_id    = var.realms[each.value.realm].id
   name        = each.value.name
@@ -42,7 +42,7 @@ resource "keycloak_role" "realm" {
 }
 
 resource "keycloak_role" "client" {
-  for_each = local.client_roles
+  for_each = local.normalized_client_roles
 
   realm_id    = var.realms[each.value.realm].id
   client_id   = var.clients[each.value.client_id].id

@@ -11,8 +11,13 @@ permissions:
 
 jobs:
   terraform-module:
-    name: Terraform module checks
+    name: Terraform module checks (Terraform ${{ matrix.terraform_version }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        terraform_version: ["1.6.6", "1.9.0"]
 
     defaults:
       run:
@@ -28,6 +33,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
+          terraform_version: ${{ matrix.terraform_version }}
 
       # 3) Format check in the module root
       - name: Terraform fmt (check)
