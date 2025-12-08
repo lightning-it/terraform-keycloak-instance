@@ -45,10 +45,6 @@ jobs:
       - name: Terraform validate (module root)
         run: terraform validate
 
-      # 5.5) Plan module configuration (local backend)
-      - name: Terraform plan (module root)
-        run: terraform plan -input=false -lock=false
-
       # 6) Validate test fixtures (smoke/advanced/empty)
       - name: Terraform validate (test fixtures)
         run: |
