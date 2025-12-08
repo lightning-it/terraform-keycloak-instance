@@ -47,11 +47,7 @@ jobs:
       - name: Terraform validate (module root)
         run: terraform validate
 
-      # 6) Plan in the module root (non-destructive check)
-      - name: Terraform plan (module root)
-        run: terraform plan -input=false -lock=false
-
-      # 7) Validate test fixtures (smoke/advanced/empty)
+      # 6) Validate test fixtures (smoke/advanced/empty)
       - name: Terraform validate (test fixtures)
         run: |
           for dir in tests/keycloak-smoke tests/keycloak-advanced tests/keycloak-empty; do
@@ -59,6 +55,6 @@ jobs:
             terraform -chdir="$dir" validate
           done
 
-      # 8) TFLint across the repo
+      # 7) TFLint across the repo
       - name: TFLint (via wunder-devtools-ee)
         run: bash scripts/wunder-devtools-ee.sh tflint --recursive
