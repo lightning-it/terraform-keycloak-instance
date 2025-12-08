@@ -12,7 +12,7 @@ terraform {
 locals {
   default_realm = try(keys(var.realms)[0], null)
 
-  identity_providers = {
+  normalized_identity_providers = {
     for idp in nonsensitive(var.identity_providers) :
     "${coalesce(try(idp.realm, null), local.default_realm)}/${coalesce(try(idp.alias, null), idp.name)}" => merge(idp, {
       realm         = coalesce(try(idp.realm, null), local.default_realm)
@@ -23,17 +23,17 @@ locals {
     if coalesce(try(idp.realm, null), local.default_realm) != null
   }
 
-  oidc_identity_providers = {
-    for k, v in local.identity_providers :
+  normalized_oidc_identity_providers = {
+    for k, v in local.normalized_identity_providers :
     k => v if v.provider_type == "oidc"
   }
 
-  saml_identity_providers = {
-    for k, v in local.identity_providers :
+  normalized_saml_identity_providers = {
+    for k, v in local.normalized_identity_providers :
     k => v if v.provider_type == "saml"
   }
 
-  identity_provider_mappers = {
+  normalized_identity_provider_mappers = {
     for m in var.identity_provider_mappers :
     "${coalesce(try(m.realm, null), local.default_realm)}/${m.identity_provider_alias}/${m.name}" => merge(m, {
       realm  = coalesce(try(m.realm, null), local.default_realm)
@@ -42,19 +42,19 @@ locals {
     if coalesce(try(m.realm, null), local.default_realm) != null
   }
 
-  ldap_user_federations = {
+  normalized_ldap_user_federations = {
     for f in nonsensitive(var.ldap_user_federations) :
     "${f.realm}/${f.name}" => f
   }
 
-  kerberos_user_federations = {
+  normalized_kerberos_user_federations = {
     for f in var.kerberos_user_federations :
     "${f.realm}/${f.name}" => f
   }
 }
 
 resource "keycloak_oidc_identity_provider" "this" {
-  for_each = local.oidc_identity_providers
+  for_each = local.normalized_oidc_identity_providers
 
   realm              = var.realms[each.value.realm].realm
   alias              = each.value.alias
@@ -77,7 +77,7 @@ resource "keycloak_oidc_identity_provider" "this" {
 }
 
 resource "keycloak_saml_identity_provider" "this" {
-  for_each = local.saml_identity_providers
+  for_each = local.normalized_saml_identity_providers
 
   realm              = var.realms[each.value.realm].realm
   alias              = each.value.alias
@@ -97,7 +97,7 @@ resource "keycloak_saml_identity_provider" "this" {
 }
 
 resource "keycloak_custom_identity_provider_mapper" "this" {
-  for_each = local.identity_provider_mappers
+  for_each = local.normalized_identity_provider_mappers
 
   realm                    = var.realms[each.value.realm].realm
   name                     = each.value.name
@@ -107,7 +107,7 @@ resource "keycloak_custom_identity_provider_mapper" "this" {
 }
 
 resource "keycloak_ldap_user_federation" "this" {
-  for_each = local.ldap_user_federations
+  for_each = local.normalized_ldap_user_federations
 
   realm_id                = var.realms[each.value.realm].id
   name                    = each.value.name
@@ -132,7 +132,7 @@ resource "keycloak_ldap_user_federation" "this" {
 }
 
 resource "keycloak_custom_user_federation" "kerberos" {
-  for_each = local.kerberos_user_federations
+  for_each = local.normalized_kerberos_user_federations
 
   realm_id    = var.realms[each.value.realm].id
   name        = each.value.name
