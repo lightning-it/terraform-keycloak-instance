@@ -30,3 +30,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 tests/*/.terraform.lock.hcl
+
+# Node tooling for semantic-release
+node_modules/
+npm-debug.log
