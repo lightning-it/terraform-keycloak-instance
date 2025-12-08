@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
+  "extends": [
+    "config:base"
+  ],
+
+  "labels": ["dependencies", "renovate"],
+
+  "npm": {
+    "enabled": true
+  },
+
+  "github-actions": {
+    "enabled": true
+  },
+
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "^\\.github/workflows/terraform-module\\.yml$"
+      ],
+      "matchStrings": [
+        "terraform_version: \\[\"(?<currentVersion1>[0-9.]+)\", \"(?<currentVersion2>[0-9.]+)\"\\]"
+      ],
+      "datasourceTemplate": "terraform-version",
+      "depNameTemplate": "hashicorp/terraform"
+    }
+  ]
+}
