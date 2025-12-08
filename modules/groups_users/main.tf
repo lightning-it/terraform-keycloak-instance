@@ -12,7 +12,7 @@ terraform {
 locals {
   default_realm = try(keys(var.realms)[0], null)
 
-  role_bindings = [
+  normalized_role_bindings = [
     for rb in var.role_bindings :
     merge(rb, {
       realm        = rb.realm
@@ -21,17 +21,19 @@ locals {
     })
   ]
 
-  user_role_bindings = [
-    for rb in local.role_bindings :
+  normalized_user_role_bindings = [
+    for rb in local.normalized_role_bindings :
     rb if try(rb.user_id, null) != null || try(rb.username, null) != null
   ]
 
-  group_role_bindings = [
-    for rb in local.role_bindings :
+  normalized_group_role_bindings = [
+    for rb in local.normalized_role_bindings :
     rb if try(rb.group_id, null) != null || try(rb.group_name, null) != null
   ]
+}
 
-  groups = {
+locals {
+  normalized_groups = {
     for g in var.groups :
     "${coalesce(try(g.realm, null), local.default_realm)}/${g.name}" => merge(g, {
       realm      = coalesce(try(g.realm, null), local.default_realm)
@@ -42,9 +44,9 @@ locals {
     if coalesce(try(g.realm, null), local.default_realm) != null
   }
 
-  realms_for_groups = distinct([for g in local.groups : g.realm])
+  realms_for_groups = distinct([for g in local.normalized_groups : g.realm])
 
-  default_groups = {
+  default_groups_input = {
     for dg in var.default_groups :
     dg.realm => dg.names
   }
@@ -52,13 +54,15 @@ locals {
   default_groups_resolved = {
     for realm in local.realms_for_groups :
     realm => compact([
-      for name in coalesce(try(local.default_groups[realm], null), []) :
+      for name in coalesce(try(local.default_groups_input[realm], null), []) :
       try(keycloak_group.this["${realm}/${name}"].id, null)
     ])
-    if length(coalesce(try(local.default_groups[realm], null), [])) > 0
+    if length(coalesce(try(local.default_groups_input[realm], null), [])) > 0
   }
+}
 
-  users = {
+locals {
+  normalized_users = {
     for u in var.users :
     "${coalesce(try(u.realm, null), local.default_realm)}/${u.username}" => merge(u, {
       realm      = coalesce(try(u.realm, null), local.default_realm)
@@ -69,22 +73,24 @@ locals {
   }
 
   user_lookup = {
-    for rb in local.user_role_bindings :
+    for rb in local.normalized_user_role_bindings :
     "${rb.realm}:${rb.username}" => {
       realm    = rb.realm
       username = rb.username
-    } if try(rb.username, null) != null && !contains(keys(local.users), "${rb.realm}/${rb.username}")
+    } if try(rb.username, null) != null && !contains(keys(local.normalized_users), "${rb.realm}/${rb.username}")
   }
 
   group_lookup = {
-    for rb in local.group_role_bindings :
+    for rb in local.normalized_group_role_bindings :
     "${rb.realm}:${rb.group_name}" => {
       realm = rb.realm
       name  = rb.group_name
-    } if try(rb.group_name, null) != null && !contains(keys(local.groups), "${rb.realm}/${rb.group_name}")
+    } if try(rb.group_name, null) != null && !contains(keys(local.normalized_groups), "${rb.realm}/${rb.group_name}")
   }
+}
 
-  service_accounts = {
+locals {
+  normalized_service_accounts = {
     for sa in var.service_accounts :
     "${coalesce(try(sa.realm, null), try(var.clients[sa.client_id].realm, null), local.default_realm)}/${sa.client_id}" => merge(sa, {
       realm      = coalesce(try(sa.realm, null), try(var.clients[sa.client_id].realm, null), local.default_realm)
@@ -110,7 +116,7 @@ data "keycloak_group" "by_name" {
 }
 
 resource "keycloak_group" "this" {
-  for_each = local.groups
+  for_each = local.normalized_groups
 
   realm_id = var.realms[each.value.realm].id
   name     = each.value.name
@@ -129,7 +135,7 @@ resource "keycloak_default_groups" "this" {
 }
 
 resource "keycloak_user" "this" {
-  for_each = local.users
+  for_each = local.normalized_users
 
   realm_id   = var.realms[each.value.realm].id
   username   = each.value.username
@@ -154,7 +160,7 @@ resource "keycloak_user" "this" {
 
 resource "keycloak_user_roles" "this" {
   for_each = {
-    for idx, rb in local.user_role_bindings :
+    for idx, rb in local.normalized_user_role_bindings :
     "${rb.realm}:${coalesce(try(rb.user_id, null), try(rb.username, null), idx)}" => rb
   }
 
@@ -183,7 +189,7 @@ resource "keycloak_user_roles" "this" {
 
 resource "keycloak_group_roles" "this" {
   for_each = {
-    for idx, rb in local.group_role_bindings :
+    for idx, rb in local.normalized_group_role_bindings :
     "${rb.realm}:${coalesce(try(rb.group_id, null), try(rb.group_name, null), idx)}" => rb
   }
 
@@ -212,7 +218,7 @@ resource "keycloak_group_roles" "this" {
 
 resource "keycloak_user_roles" "service_accounts" {
   for_each = {
-    for key, sa in local.service_accounts :
+    for key, sa in local.normalized_service_accounts :
     key => sa
   }
 

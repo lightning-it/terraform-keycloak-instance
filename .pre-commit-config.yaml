@@ -28,3 +28,9 @@ repos:
         entry: bash scripts/wunder-devtools-ee.sh terraform-docs markdown table --output-file README.md --output-mode inject .
         pass_filenames: false
         files: ^(main\.tf|variables\.tf|outputs\.tf)$
+
+      - id: terraform-test-keycloak
+        name: make test-keycloak
+        language: system
+        entry: make test-keycloak
+        pass_filenames: false

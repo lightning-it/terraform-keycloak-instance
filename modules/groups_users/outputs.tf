@@ -6,10 +6,10 @@ output "groups" {
       id     = g.id
       realm  = g.realm_id
       name   = g.name
-      parent = try(local.groups[key].parent, null)
-      path   = try(local.groups[key].path, null)
+      parent = try(local.normalized_groups[key].parent, null)
+      path   = try(local.normalized_groups[key].path, null)
       metadata = {
-        attributes = try(local.groups[key].attributes, {})
+        attributes = try(local.normalized_groups[key].attributes, {})
       }
     }
   }
@@ -60,7 +60,7 @@ output "role_bindings" {
 output "service_accounts" {
   description = "Map of client service account users keyed by \"<realm>/<client_id>\"."
   value = {
-    for key, sa in local.service_accounts :
+    for key, sa in local.normalized_service_accounts :
     key => {
       realm     = sa.realm
       client_id = sa.client_id
