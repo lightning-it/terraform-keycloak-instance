@@ -1,20 +1,34 @@
+# yamllint disable rule:truthy
 ---
-name: Semantic Release
+name: Terraform Module CI & Semantic Release
 
 on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  lint:
-    name: Terraform module checks
+  terraform-module:
+    name: Terraform module checks (Terraform ${{ matrix.terraform_version }})
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        terraform_version: ["1.6.6", "1.9.0"]
+
+    defaults:
+      run:
+        shell: bash
+
     steps:
-      # 1) Checkout repository
+      # 1) Checkout the repository
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -23,12 +37,13 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
+          terraform_version: ${{ matrix.terraform_version }}
 
       # 3) Format check in the module root
       - name: Terraform fmt (check)
         run: terraform fmt -check -recursive
 
-      # 4) Init without backend (we are testing a module, no real state)
+      # 4) Init without backend (we are testing a module, no state)
       - name: Terraform init (module root)
         run: terraform init -backend=false
 
@@ -52,12 +67,14 @@ jobs:
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    needs: lint
+    needs: terraform-module
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write       # required to create tags and releases
       issues: write         # optional, for release notes references
       pull-requests: write  # optional, for release notes references
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       # Checkout with full history for semantic-release
       - name: Checkout
@@ -78,18 +95,18 @@ jobs:
 
       # Run semantic-release (real release)
       - name: Run semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
 
   # Dry-run job: checks semantic-release config on pull requests
   release_dry_run:
     name: Semantic Release (dry run)
     runs-on: ubuntu-latest
-    needs: lint
+    needs: terraform-module
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       # Checkout with full history to let semantic-release inspect tags/commits
       - name: Checkout
@@ -110,6 +127,4 @@ jobs:
 
       # Run semantic-release in dry-run mode (no tags, no releases, no commits)
       - name: Run semantic-release (dry run)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release --dry-run --no-ci
