@@ -1,20 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-
   "extends": [
     "config:recommended"
   ],
-
-  "labels": ["dependencies", "renovate"],
-
-  "npm": {
-    "enabled": true
-  },
-
-  "github-actions": {
-    "enabled": true
-  },
-
+  "dependencyDashboard": true,
+  "timezone": "UTC",
+  "schedule": [
+    "before 6am on Friday"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
   "regexManagers": [
     {
       "fileMatch": [
@@ -38,12 +35,13 @@
       "versioningTemplate": "node"
     }
   ],
-
   "packageRules": [
     {
       "groupName": "semantic-release toolchain",
       "description": "Keep semantic-release and its plugins in sync",
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "matchPackageNames": [
         "semantic-release",
         "@semantic-release/changelog",
@@ -58,10 +56,20 @@
     },
     {
       "description": "Highlight major updates for semantic-release itself",
-      "matchManagers": ["npm"],
-      "matchPackageNames": ["semantic-release"],
-      "matchUpdateTypes": ["major"],
-      "labels": ["dependencies", "renovate", "breaking-release-tools"]
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "semantic-release"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "labels": [
+        "dependencies",
+        "renovate",
+        "breaking-release-tools"
+      ]
     }
   ]
 }
