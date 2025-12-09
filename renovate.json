@@ -6,7 +6,7 @@
   "dependencyDashboard": true,
   "timezone": "UTC",
   "schedule": [
-    "before 6am on monday"
+    "before 6am on Friday"
   ],
   "labels": [
     "dependencies",
