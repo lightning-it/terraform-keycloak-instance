@@ -29,8 +29,24 @@ repos:
         pass_filenames: false
         files: ^(main\.tf|variables\.tf|outputs\.tf)$
 
+      - id: terraform-test
+        name: terraform test (fast)
+        language: system
+        entry: bash scripts/wunder-devtools-ee.sh bash -lc 'cd tests && terraform test'
+        pass_filenames: false
+        files: \.tf$
+
       - id: terraform-test-keycloak
         name: make test-keycloak
         language: system
         entry: make test-keycloak
         pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: renovate-config-validate
+        name: renovate-config-validator (terraform-devtools)
+        language: system
+        pass_filenames: false
+        files: ^renovate\.json$
+        entry: bash -lc 'scripts/wunder-devtools-ee.sh renovate-config-validator'
