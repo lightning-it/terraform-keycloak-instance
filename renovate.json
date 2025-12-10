@@ -12,9 +12,12 @@
     "dependencies",
     "renovate"
   ],
-  "regexManagers": [
+  "customManagers": [
     {
-      "fileMatch": ["^\\.github/workflows/terraform-module\\.yml$"],
+      "customType": "regex",
+      "fileMatch": [
+        "^\\.github/workflows/terraform-module\\.yml$"
+      ],
       "matchStrings": [
         "terraform_version: \\[\"(?<currentVersion1>[0-9.]+)\", \"(?<currentVersion2>[0-9.]+)\"\\]"
       ],
@@ -23,7 +26,10 @@
       "currentValueTemplate": "{{currentVersion1}}"
     },
     {
-      "fileMatch": ["^\\.github/workflows/release\\.yml$"],
+      "customType": "regex",
+      "fileMatch": [
+        "^\\.github/workflows/release\\.yml$"
+      ],
       "matchStrings": [
         "node-version: ['\"]?(?<currentValue>[0-9.]+)['\"]?"
       ],
