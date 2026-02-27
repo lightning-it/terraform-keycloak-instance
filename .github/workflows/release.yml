@@ -34,7 +34,7 @@ jobs:
 
       # 2) Install Terraform CLI
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_wrapper: false
           terraform_version: ${{ matrix.terraform_version }}
