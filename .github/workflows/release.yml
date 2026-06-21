@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   terraform-module:
@@ -59,7 +60,11 @@ jobs:
             terraform -chdir="$dir" validate
           done
 
-      # 7) TFLint across the repo
+      # 7) Authenticate for the private devtools execution environment image
+      - name: Login to GHCR
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # 8) TFLint across the repo
       - name: TFLint (via wunder-devtools-ee)
         run: bash scripts/wunder-devtools-ee.sh tflint --recursive
 

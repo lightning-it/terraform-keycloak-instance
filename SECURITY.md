@@ -57,7 +57,7 @@ see. We will use that channel to track the investigation and coordinate a fix.
   - plan a fix (usually as a patch or minor release to the latest version).
 - When a fix is released, we will:
   - publish a new version of the module,
-  - update the changelog / release notes with a brief description of the issue,
+  - update the GitHub Release notes with a brief description of the issue,
   - close the advisory with a reference to the fixed version.
 
 If you do not receive a response within a reasonable time, feel free to follow
