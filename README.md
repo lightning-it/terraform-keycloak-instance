@@ -9,35 +9,6 @@
 
 <!-- END LIT_QUALITY_BADGES -->
 
-<!-- BEGIN LIT_SHARED_RELEASE_MODEL -->
-
-## Release and Quality Model
-
-This repository follows the Lightning IT shared release and quality model.
-
-See [RELEASE.md](./RELEASE.md) for:
-
-- branch and release flow
-- required quality checks
-- test matrix
-- release evidence
-- artifact publishing
-- supported repository-specific release behavior
-
-Repository classification: **Terraform Module**.
-Required test profiles: `pre-commit, terraform-fmt, terraform-validate, docs`.
-Publishing targets: `terraform-registry`.
-
-## Supported and Tested Platforms
-
-| Platform / Product | Status | Validation |
-|---|---:|---|
-| ubuntu-latest | Supported | Terraform validate |
-| terraform | Tested where applicable | Terraform validate |
-| keycloak-provider | Tested where applicable | Terraform validate |
-
-<!-- END LIT_SHARED_RELEASE_MODEL -->
-
 Terraform Registry: [`lightning-it/instance/keycloak`](https://registry.terraform.io/modules/lightning-it/instance/keycloak/latest)
 
 Terraform module for configuring a full Keycloak instance using the official
@@ -300,3 +271,64 @@ No resources.
 | <a name="output_token_settings"></a> [token\_settings](#output\_token\_settings) | Summary of token timeout settings per realm. |
 | <a name="output_users"></a> [users](#output\_users) | Map of seeded users keyed by "<realm>/<username>". |
 <!-- END_TF_DOCS -->
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution and review expectations.
+
+## License
+
+See [LICENSE](./LICENSE).
+
+## Security
+
+See [SECURITY.md](./SECURITY.md) for supported versions and vulnerability reporting.
+
+<!-- BEGIN LIT_RELEASE_QUALITY_MODEL -->
+
+## Release and Quality Model
+
+This repository follows the Lightning IT shared release and quality model.
+The README shows the current supported and tested matrix.
+Exact per-version validation proof is stored with each GitHub Release as `release-evidence.md` and `release-evidence.json`.
+Releases are created from the protected `main` branch after a reviewed `develop -> main` release promotion.
+Repository checks validate the managed structure, documentation, and release model for this repository type.
+
+See:
+
+- [RELEASE.md](./RELEASE.md)
+- [TESTING.md](./TESTING.md)
+- [GitHub Releases](../../releases)
+
+Repository classification: **Terraform Module**.
+Required test profiles: `pre-commit, terraform-fmt, terraform-validate, docs`.
+Publishing targets: `terraform-registry`.
+
+<!-- END LIT_RELEASE_QUALITY_MODEL -->
+
+<!-- BEGIN LIT_COMPATIBILITY_MATRIX -->
+
+## Compatibility Matrix
+
+| Platform / Product | Status | Validation |
+|---|---:|---|
+| ubuntu-latest | Supported | Terraform validate |
+| terraform | Tested where applicable | Terraform validate |
+| keycloak-provider | Tested where applicable | Terraform validate |
+
+Validation proof for each released version is stored in the corresponding GitHub Release evidence.
+
+<!-- END LIT_COMPATIBILITY_MATRIX -->
+
+## Release Evidence
+
+This repository does not publish release artifacts by default; release evidence is recorded when artifact releases are enabled.
+The evidence records:
+
+- tested matrix combinations
+- GitHub Actions run links
+- artifact references
+- publish status
+- security scan status
+
+See [GitHub Releases](../../releases), [RELEASE.md](./RELEASE.md), and [TESTING.md](./TESTING.md) for the release process and validation model.
