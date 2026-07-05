@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="ghcr.io/lightning-it/wunder-devtools-ee:v1.0.8"
+IMAGE="quay.io/l-it/ee-wunder-devtools-ubi9:v1.9.2"
 
 docker run --rm \
   --entrypoint "" \
