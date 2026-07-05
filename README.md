@@ -2,6 +2,7 @@
 
 <!-- BEGIN LIT_SHARED_RELEASE_MODEL -->
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lightning-it/terraform-keycloak-instance/badge)](https://scorecard.dev/viewer/?uri=github.com/lightning-it/terraform-keycloak-instance)
 [![CI](https://github.com/lightning-it/terraform-keycloak-instance/actions/workflows/repository-quality.yml/badge.svg?branch=develop)](https://github.com/lightning-it/terraform-keycloak-instance/actions/workflows/repository-quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
