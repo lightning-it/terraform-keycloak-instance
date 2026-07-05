@@ -1,79 +1,116 @@
 # Security Policy
 
-We take security seriously and want to make it easy to report potential issues
-in this project.
+Lightning IT builds and maintains software, automation, and reference
+implementations to help customers deliver secure, policy-driven IT services
+(e.g. infrastructure building blocks, DevSecOps tooling, blueprints, and
+platform integrations). Because our repositories can influence how systems are
+deployed, configured, and operated, we treat security-relevant reports
+seriously.
 
-This policy applies to this repository and its published artifacts (e.g.
-Terraform modules on the Terraform Registry).
+This document describes which versions of this **Lightning IT repository** are
+supported with security updates and how to report a vulnerability.
+
+> **Note:** Lightning IT maintains multiple repositories (e.g. Ansible
+> Collections, Terraform modules, container images, templates, documentation).
+> Each repository may have its own lifecycle and release cadence, but the same
+> reporting and disclosure principles apply across all Lightning IT projects.
 
 ---
 
 ## Supported Versions
 
-This project follows semantic versioning and is released continuously using
-semantic-release.
+Lightning IT repositories generally follow semantic versioning
+(`MAJOR.MINOR.PATCH`) where applicable:
 
-To keep the maintenance burden realistic and ensure we can respond quickly, we
-generally support **only the latest released version**:
+- **MAJOR** – breaking changes (interfaces, structures, behavior)
+- **MINOR** – new features or non-breaking improvements
+- **PATCH** – bug fixes and security-related corrections
 
-- The **latest major/minor** (e.g. `1.x.y`) is considered supported.
-- Older versions may continue to work, but will **not** receive security
-  backports or patches.
-- If you are affected by a security issue, please upgrade to the latest
-  released version of the module.
+We currently provide security fixes for:
 
-> In short: if you find a security issue, we will always fix it in the latest
-> release line. We do not maintain separate long-lived branches for older
-> versions.
+| Version range | Status |
+| --- | --- |
+| `main` (or default) branch | ✅ actively supported (security + bugfixes) |
+| latest tagged release | ✅ supported (security fixes as needed) |
+| older tags / branches | ❌ no guaranteed security updates |
+
+If you are using an older tag or branch, we strongly recommend upgrading to
+the latest version from the default branch or the most recent tag before
+requesting security fixes.
 
 ---
 
 ## Reporting a Vulnerability
 
-If you believe you have found a security vulnerability in this project, please
-report it **privately** so we can investigate and fix it before it becomes
-public.
+If you believe you have found a security issue in this repository, for example:
 
-### Preferred way: GitHub Security Advisory
+- insecure defaults in automation, templates, or code,
+- documentation that encourages unsafe configuration,
+- misconfigurations that could weaken security controls,
+- leaked credentials, tokens, or sensitive information,
+- dependency or supply-chain concerns,
 
-1. Go to the repository on GitHub.
-2. Open the **Security** tab.
-3. Click **"Report a vulnerability"**.
-4. Provide as much detail as possible:
-   - A description of the issue.
-   - Steps to reproduce.
-   - Any potential impact you see.
-   - If available, a minimal example configuration.
+please **do not** open a public issue or pull request.
 
-GitHub will create a private Security Advisory that only the maintainers can
-see. We will use that channel to track the investigation and coordinate a fix.
+Instead:
 
-### Response expectations
+1. Prepare a short report including:
+   - a description of the issue and potential impact,
+   - which files/components are affected,
+   - steps to reproduce (if applicable),
+   - any relevant logs/config snippets (redacted as needed).
 
-- We will try to acknowledge your report within **5 business days**.
-- Once acknowledged, we will:
-  - investigate and reproduce the issue (if possible),
-  - assess impact and severity,
-  - plan a fix (usually as a patch or minor release to the latest version).
-- When a fix is released, we will:
-  - publish a new version of the module,
-  - update the changelog / release notes with a brief description of the issue,
-  - close the advisory with a reference to the fixed version.
+2. Send your report to:
 
-If you do not receive a response within a reasonable time, feel free to follow
-up via the same GitHub Security Advisory thread.
+   - 📧 **security@l-it.io** (preferred), or
+   - your existing Lightning IT contact with the subject:
+     `Security Report`
+
+3. You will receive an acknowledgement within **3 business days**.
+
+We will then:
+- triage the issue (severity, impact, affected versions),
+- confirm whether we can reproduce it,
+- propose remediation options and an appropriate timeline.
+
+If the vulnerability is confirmed, we will:
+
+- prepare and review a fix (often in a private branch),
+- ship a patch or minor release depending on impact,
+- document the fix in release notes and/or a changelog where appropriate,
+- optionally credit you by name or pseudonym if you wish.
+
+If the report is determined to be a false positive or out of scope, we will
+still reply with an explanation.
 
 ---
 
-## Out of scope
+## Scope
 
-The following are generally **out of scope** for security reports:
+This security policy covers:
 
-- Misconfigurations of Keycloak or infrastructure that are not directly caused
-  by this module.
-- Issues in dependencies (e.g. Terraform, the Keycloak provider, or Docker
-  images) that should be reported upstream.
-- Non-security bugs (please open a normal GitHub issue for those).
+- the **content of this repository**, including (as applicable):
+  - source code,
+  - automation definitions (e.g. playbooks, roles, pipelines),
+  - container build definitions,
+  - templates, configuration, and documentation shipped with the repository.
 
-If in doubt, report the issue anyway – we will triage it and let you know if it
-falls under this security policy.
+It does **not** cover:
+
+- upstream products and dependencies (e.g. RHEL, OpenShift, Kubernetes,
+  Keycloak, Vault, GitLab, etc.), which follow their own vendor security
+  processes.
+
+However, if you discover a vulnerability in a third-party component that is
+**introduced or made exploitable** by Lightning IT configuration, packaging,
+or guidance, please report it via the process above so we can assess impact and
+publish mitigations.
+
+---
+
+## Coordinated Disclosure
+
+We follow responsible, coordinated disclosure principles. Please allow us a
+reasonable timeframe to investigate and remediate issues before public
+disclosure. If you have a disclosure deadline, include it in your report so we
+can coordinate appropriately.
