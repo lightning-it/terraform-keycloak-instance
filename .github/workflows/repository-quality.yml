@@ -38,7 +38,7 @@ jobs:
 
       - name: Upload desired GitHub policy evidence
         if: hashFiles('dist/github-release-model-audit.json') != ''
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: github-release-model-audit
           path: |
