@@ -1,0 +1,36 @@
+---
+schema_version: 1
+managed_by: lightning-it/shared-assets-lit
+repository: terraform-keycloak-instance
+visibility: public
+license_spdx: MIT
+repository_type: terraform_module
+release_type: semantic_release
+artifact_type: terraform_registry_module
+test_profiles:
+  - pre-commit
+  - terraform-fmt
+  - terraform-validate
+  - docs
+os_matrix:
+  - ubuntu-latest
+product_matrix:
+  - terraform
+  - keycloak-provider
+publishing_targets:
+  - terraform-registry
+galaxy_publish: false
+quay_publish: false
+release_evidence: false
+heavy_incus_required: false
+openssf_best_practices:
+  required: true
+  project_id: null
+  target_level: passing
+  exception: null
+readme_badges:
+  - pre-commit
+  - release
+  - license
+workflows:
+  ci: repository-quality.yml
