@@ -221,7 +221,7 @@ maintainable.
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.0, < 2.0.0 |
 | <a name="requirement_keycloak"></a> [keycloak](#requirement\_keycloak) | ~> 5.0 |
 
@@ -232,7 +232,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-|------|--------|---------|
+| ---- | ------ | ------- |
 | <a name="module_clients"></a> [clients](#module\_clients) | ./modules/clients | n/a |
 | <a name="module_groups_users"></a> [groups\_users](#module\_groups\_users) | ./modules/groups_users | n/a |
 | <a name="module_idps_federation"></a> [idps\_federation](#module\_idps\_federation) | ./modules/idps_federation | n/a |
@@ -246,7 +246,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_auth_flow_settings"></a> [auth\_flow\_settings](#input\_auth\_flow\_settings) | Authentication flow and login UX settings per realm. | <pre>list(object({<br/>    realm                          = string<br/>    login_with_email_allowed       = optional(bool)<br/>    duplicate_emails_allowed       = optional(bool)<br/>    reset_password_allowed         = optional(bool)<br/>    remember_me                    = optional(bool)<br/>    verify_email                   = optional(bool)<br/>    registration_allowed           = optional(bool)<br/>    registration_email_as_username = optional(bool)<br/>  }))</pre> | `[]` | no |
 | <a name="input_bruteforce_settings"></a> [bruteforce\_settings](#input\_bruteforce\_settings) | Brute-force protection settings per realm. | <pre>list(object({<br/>    realm                            = string<br/>    enabled                          = bool<br/>    permanent_lockout                = bool<br/>    max_login_failures               = number<br/>    wait_increment_seconds           = number<br/>    quick_login_check_milli          = number<br/>    minimum_quick_login_wait_seconds = number<br/>    max_failure_wait_seconds         = number<br/>    failure_reset_time_seconds       = number<br/>  }))</pre> | `[]` | no |
 | <a name="input_client_roles"></a> [client\_roles](#input\_client\_roles) | Client-specific roles to configure. | <pre>list(object({<br/>    client_id   = string<br/>    name        = string<br/>    realm       = optional(string)<br/>    description = optional(string)<br/>    composite   = optional(bool)<br/>    composites  = optional(list(string))<br/>  }))</pre> | `[]` | no |
@@ -277,7 +277,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_client_roles"></a> [client\_roles](#output\_client\_roles) | Map of configured client roles keyed by "<client\_id>:<role\_name>". |
 | <a name="output_client_scopes"></a> [client\_scopes](#output\_client\_scopes) | Map of configured client scopes keyed by scope name. |
 | <a name="output_clients"></a> [clients](#output\_clients) | Map of configured clients keyed by client\_id. |
