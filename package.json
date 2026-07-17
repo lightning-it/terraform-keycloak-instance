@@ -2,6 +2,9 @@
   "name": "terraform-keycloak-instance",
   "version": "0.0.0",
   "private": true,
+  "overrides": {
+    "handlebars": "4.7.9"
+  },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.0",
     "@semantic-release/commit-analyzer": "^13.0.0",
