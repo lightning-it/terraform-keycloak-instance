@@ -15,20 +15,19 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "^\\.github/workflows/terraform-module\\.yml$"
+      "managerFilePatterns": [
+        "/^\\.github/workflows/release\\.yml$/"
       ],
       "matchStrings": [
-        "terraform_version: \\[\"(?<currentVersion1>[0-9.]+)\", \"(?<currentVersion2>[0-9.]+)\"\\]"
+        "terraform_version:\\s*\\[\"[0-9.]+\",\\s*\"(?<currentValue>[0-9.]+)\"\\]"
       ],
       "datasourceTemplate": "terraform-version",
-      "depNameTemplate": "hashicorp/terraform",
-      "currentValueTemplate": "{{currentVersion1}}"
+      "depNameTemplate": "hashicorp/terraform"
     },
     {
       "customType": "regex",
-      "fileMatch": [
-        "^\\.github/workflows/release\\.yml$"
+      "managerFilePatterns": [
+        "/^\\.github/workflows/release\\.yml$/"
       ],
       "matchStrings": [
         "node-version: ['\"]?(?<currentValue>[0-9.]+)['\"]?"
