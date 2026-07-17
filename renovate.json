@@ -19,7 +19,7 @@
         "/^\\.github/workflows/release\\.yml$/"
       ],
       "matchStrings": [
-        "terraform_version:\\s*\\[\"(?<currentValue>[0-9.]+)\"(?:,\\s*\"[0-9.]+\")*\\]"
+        "terraform_version:\\s*\\[\"[0-9.]+\",\\s*\"(?<currentValue>[0-9.]+)\"\\]"
       ],
       "datasourceTemplate": "terraform-version",
       "depNameTemplate": "hashicorp/terraform"
