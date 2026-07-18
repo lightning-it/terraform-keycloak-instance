@@ -10,9 +10,13 @@ const fixtureCommit = {
 const commits = [fixtureCommit];
 const logger = { log() {} };
 const pluginConfig = { preset: "conventionalcommits" };
-const repositoryUrl =
-  "https://github.com/lightning-it/terraform-keycloak-instance.git";
-const repositoryWebUrl = repositoryUrl.replace(/\.git$/u, "");
+const repositorySlug =
+  process.env.GITHUB_REPOSITORY ??
+  "lightning-it/terraform-keycloak-instance";
+const repositoryServer =
+  process.env.GITHUB_SERVER_URL ?? "https://github.com";
+const repositoryWebUrl = `${repositoryServer}/${repositorySlug}`;
+const repositoryUrl = `${repositoryWebUrl}.git`;
 
 const releaseType = await analyzeCommits(pluginConfig, {
   commits,
