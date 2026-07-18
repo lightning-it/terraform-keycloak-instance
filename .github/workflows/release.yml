@@ -94,6 +94,9 @@ jobs:
         run: npm ci
 
       # Run semantic-release (real release)
+      - name: Verify semantic-release notes generation
+        run: npm run test:release-notes
+
       - name: Run semantic-release
         run: npx semantic-release
 
@@ -124,13 +127,20 @@ jobs:
         run: npm ci
 
       # Run semantic-release in dry-run mode (no tags, no releases, no commits)
+      - name: Verify semantic-release notes generation
+        run: npm run test:release-notes
+
       - name: Run semantic-release (dry run)
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          dry_run_branch="release-dry-run-pr-${{ github.event.pull_request.number }}"
+          dry_run_branch="release-dry-run-pr-${PR_NUMBER}"
           git switch -C "${dry_run_branch}"
           npx semantic-release \
             --dry-run \
             --no-ci \
             --branches "${dry_run_branch}" \
             --repository-url "file://${GITHUB_WORKSPACE}" \
-            --plugins @semantic-release/commit-analyzer @semantic-release/release-notes-generator
+            --plugins \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator
