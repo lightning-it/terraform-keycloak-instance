@@ -94,6 +94,9 @@ jobs:
         run: npm ci
 
       # Run semantic-release (real release)
+      - name: Verify semantic-release notes generation
+        run: npm run test:release-notes
+
       - name: Run semantic-release
         run: npx semantic-release
 
@@ -105,8 +108,6 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
     steps:
       # Checkout with full history to let semantic-release inspect tags/commits
       - name: Checkout
@@ -126,5 +127,45 @@ jobs:
         run: npm ci
 
       # Run semantic-release in dry-run mode (no tags, no releases, no commits)
+      - name: Verify semantic-release notes generation
+        run: npm run test:release-notes
+
       - name: Run semantic-release (dry run)
-        run: npx semantic-release --dry-run --no-ci
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          dry_run_branch="release-dry-run-pr-${PR_NUMBER}"
+          dry_run_log="${RUNNER_TEMP}/semantic-release-dry-run.log"
+          repository_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          local_repository_url="file://${GITHUB_WORKSPACE}"
+          git switch -C "${dry_run_branch}"
+          git config --local \
+            "url.${local_repository_url}.insteadOf" \
+            "${repository_url}"
+          semantic_release_status=0
+          # env-ci trusts GITHUB_REF over the checked-out branch in Actions.
+          # Point it at the synthetic branch instead of refs/pull/.../merge.
+          GITHUB_REF="refs/heads/${dry_run_branch}" npx semantic-release \
+            --dry-run \
+            --no-ci \
+            --branches "${dry_run_branch}" \
+            --repository-url "${repository_url}" \
+            --plugins \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator \
+            >"${dry_run_log}" 2>&1 || semantic_release_status=$?
+          cat "${dry_run_log}"
+          if [ "${semantic_release_status}" -ne 0 ]; then
+            exit "${semantic_release_status}"
+          fi
+          if grep -Fq \
+            "while semantic-release is configured to only publish from" \
+            "${dry_run_log}"; then
+            echo "semantic-release did not analyze the dry-run branch" >&2
+            exit 1
+          fi
+          if grep -Fq "The next release version is" "${dry_run_log}" && \
+            ! grep -Eq '^### ' "${dry_run_log}"; then
+            echo "semantic-release generated no categorized notes" >&2
+            exit 1
+          fi
