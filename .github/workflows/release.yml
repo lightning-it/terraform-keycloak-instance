@@ -105,8 +105,6 @@ jobs:
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
     steps:
       # Checkout with full history to let semantic-release inspect tags/commits
       - name: Checkout
@@ -127,4 +125,12 @@ jobs:
 
       # Run semantic-release in dry-run mode (no tags, no releases, no commits)
       - name: Run semantic-release (dry run)
-        run: npx semantic-release --dry-run --no-ci
+        run: |
+          dry_run_branch="release-dry-run-pr-${{ github.event.pull_request.number }}"
+          git switch -C "${dry_run_branch}"
+          npx semantic-release \
+            --dry-run \
+            --no-ci \
+            --branches "${dry_run_branch}" \
+            --repository-url "file://${GITHUB_WORKSPACE}" \
+            --plugins @semantic-release/commit-analyzer @semantic-release/release-notes-generator
