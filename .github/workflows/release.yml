@@ -136,14 +136,16 @@ jobs:
         run: |
           dry_run_branch="release-dry-run-pr-${PR_NUMBER}"
           dry_run_log="${RUNNER_TEMP}/semantic-release-dry-run.log"
-          repository_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          repository_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           local_repository_url="file://${GITHUB_WORKSPACE}"
           git switch -C "${dry_run_branch}"
           git config --local \
             "url.${local_repository_url}.insteadOf" \
             "${repository_url}"
           semantic_release_status=0
-          env -u GITHUB_ACTIONS npx semantic-release \
+          # env-ci trusts GITHUB_REF over the checked-out branch in Actions.
+          # Point it at the synthetic branch instead of refs/pull/.../merge.
+          GITHUB_REF="refs/heads/${dry_run_branch}" npx semantic-release \
             --dry-run \
             --no-ci \
             --branches "${dry_run_branch}" \
