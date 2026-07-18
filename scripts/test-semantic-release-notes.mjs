@@ -28,6 +28,7 @@ assert.equal(releaseType, "patch", "fixture must select a patch release");
 const notes = await generateNotes(pluginConfig, {
   commits,
   cwd: process.cwd(),
+  logger,
   lastRelease: {
     gitHead: "1111111111111111111111111111111111111111",
     gitTag: "v1.2.2",
