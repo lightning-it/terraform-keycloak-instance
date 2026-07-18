@@ -135,17 +135,31 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           dry_run_branch="release-dry-run-pr-${PR_NUMBER}"
+          dry_run_log="${RUNNER_TEMP}/semantic-release-dry-run.log"
           repository_url="https://github.com/${GITHUB_REPOSITORY}.git"
           local_repository_url="file://${GITHUB_WORKSPACE}"
           git switch -C "${dry_run_branch}"
           git config --local \
             "url.${local_repository_url}.insteadOf" \
             "${repository_url}"
-          npx semantic-release \
+          env -u GITHUB_ACTIONS npx semantic-release \
             --dry-run \
             --no-ci \
             --branches "${dry_run_branch}" \
             --repository-url "${repository_url}" \
             --plugins \
             @semantic-release/commit-analyzer \
-            @semantic-release/release-notes-generator
+            @semantic-release/release-notes-generator \
+            >"${dry_run_log}" 2>&1
+          cat "${dry_run_log}"
+          if grep -Fq \
+            "while semantic-release is configured to only publish from" \
+            "${dry_run_log}"; then
+            echo "semantic-release did not analyze the dry-run branch" >&2
+            exit 1
+          fi
+          if grep -Fq "The next release version is" "${dry_run_log}" && \
+            ! grep -Eq '^### ' "${dry_run_log}"; then
+            echo "semantic-release generated no categorized notes" >&2
+            exit 1
+          fi
