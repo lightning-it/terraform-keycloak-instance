@@ -8,7 +8,14 @@ const fixtureCommit = {
   message: "fix(release): preserve categorized notes",
 };
 const commits = [fixtureCommit];
-const logger = { log() {} };
+const noopLogger = () => {};
+const logger = {
+  log: noopLogger,
+  info: noopLogger,
+  warn: noopLogger,
+  error: noopLogger,
+  success: noopLogger,
+};
 const pluginConfig = { preset: "conventionalcommits" };
 const repositorySlug =
   process.env.GITHUB_REPOSITORY ??
