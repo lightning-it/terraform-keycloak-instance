@@ -135,12 +135,17 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           dry_run_branch="release-dry-run-pr-${PR_NUMBER}"
+          repository_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          local_repository_url="file://${GITHUB_WORKSPACE}"
           git switch -C "${dry_run_branch}"
+          git config --local \
+            "url.${local_repository_url}.insteadOf" \
+            "${repository_url}"
           npx semantic-release \
             --dry-run \
             --no-ci \
             --branches "${dry_run_branch}" \
-            --repository-url "file://${GITHUB_WORKSPACE}" \
+            --repository-url "${repository_url}" \
             --plugins \
             @semantic-release/commit-analyzer \
             @semantic-release/release-notes-generator

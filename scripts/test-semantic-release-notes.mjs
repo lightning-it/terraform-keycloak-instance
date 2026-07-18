@@ -10,6 +10,9 @@ const fixtureCommit = {
 const commits = [fixtureCommit];
 const logger = { log() {} };
 const pluginConfig = { preset: "conventionalcommits" };
+const repositoryUrl =
+  "https://github.com/lightning-it/terraform-keycloak-instance.git";
+const repositoryWebUrl = repositoryUrl.replace(/\.git$/u, "");
 
 const releaseType = await analyzeCommits(pluginConfig, {
   commits,
@@ -32,8 +35,7 @@ const notes = await generateNotes(pluginConfig, {
     version: "1.2.3",
   },
   options: {
-    repositoryUrl:
-      "https://github.com/lightning-it/terraform-keycloak-instance.git",
+    repositoryUrl,
   },
 });
 
@@ -43,6 +45,14 @@ assert.match(
   notes,
   /preserve categorized notes/,
   "fixture commit must be rendered in the release notes",
+);
+assert.ok(
+  notes.includes(`${repositoryWebUrl}/compare/v1.2.2...v1.2.3`),
+  "release comparison must use the canonical repository URL",
+);
+assert.ok(
+  notes.includes(`${repositoryWebUrl}/commit/${fixtureCommit.hash}`),
+  "commit link must use the canonical repository URL",
 );
 
 console.log("semantic-release generated categorized fixture notes");
