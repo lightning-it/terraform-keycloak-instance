@@ -142,6 +142,7 @@ jobs:
           git config --local \
             "url.${local_repository_url}.insteadOf" \
             "${repository_url}"
+          semantic_release_status=0
           env -u GITHUB_ACTIONS npx semantic-release \
             --dry-run \
             --no-ci \
@@ -150,8 +151,11 @@ jobs:
             --plugins \
             @semantic-release/commit-analyzer \
             @semantic-release/release-notes-generator \
-            >"${dry_run_log}" 2>&1
+            >"${dry_run_log}" 2>&1 || semantic_release_status=$?
           cat "${dry_run_log}"
+          if [ "${semantic_release_status}" -ne 0 ]; then
+            exit "${semantic_release_status}"
+          fi
           if grep -Fq \
             "while semantic-release is configured to only publish from" \
             "${dry_run_log}"; then
