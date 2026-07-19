@@ -19,7 +19,14 @@
   "packageRules": [
     {
       "description": "Automerge safe non-major updates into develop after CI passes",
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "pinDigest"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest",
+        "pinDigest",
+        "lockFileMaintenance"
+      ],
       "addLabels": ["safe-automerge"],
       "automerge": true,
       "automergeType": "pr"
@@ -30,6 +37,11 @@
       "addLabels": ["breaking-update"],
       "automerge": false,
       "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Keep every component of the GitHub Actions toolchain on one version",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
     }
   ]
 }

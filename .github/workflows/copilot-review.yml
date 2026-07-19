@@ -42,6 +42,7 @@ jobs:
         contains(github.event.pull_request.labels.*.name, 'chore') &&
         contains(github.event.pull_request.labels.*.name, 'shared-assets-lit')) &&
       !(github.event.pull_request.user.login == 'litreleasebot' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
         startsWith(github.event.pull_request.head.ref, 'chore/sync-repository-quality-') &&
         github.event.pull_request.base.ref == 'develop' &&
         github.event.pull_request.title == 'chore: sync repository quality assets' &&
