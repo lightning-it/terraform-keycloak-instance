@@ -1,77 +1,35 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":semanticCommitType(chore)",
+    ":semanticCommitScope(deps)"
   ],
-  "dependencyDashboard": true,
+  "renovate-config": {
+    "enabled": false
+  },
+  "labels": ["dependencies", "renovate"],
+  "baseBranchPatterns": ["develop"],
   "timezone": "UTC",
-  "schedule": [
-    "before 6am on Friday"
-  ],
-  "labels": [
-    "dependencies",
-    "renovate"
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^\\.github/workflows/release\\.yml$/"
-      ],
-      "matchStrings": [
-        "terraform_version:\\s*\\[\"[0-9.]+\",\\s*\"(?<currentValue>[0-9.]+)\"\\]"
-      ],
-      "datasourceTemplate": "terraform-version",
-      "depNameTemplate": "hashicorp/terraform"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^\\.github/workflows/release\\.yml$/"
-      ],
-      "matchStrings": [
-        "node-version: ['\"]?(?<currentValue>[0-9.]+)['\"]?"
-      ],
-      "datasourceTemplate": "node",
-      "depNameTemplate": "node",
-      "versioningTemplate": "node"
-    }
-  ],
+  "schedule": [],
+  "rebaseWhen": "behind-base-branch",
+  "prConcurrentLimit": 5,
   "packageRules": [
     {
-      "groupName": "semantic-release toolchain",
-      "description": "Keep semantic-release and its plugins in sync",
-      "matchManagers": [
-        "npm"
-      ],
-      "matchPackageNames": [
-        "semantic-release",
-        "@semantic-release/changelog",
-        "@semantic-release/commit-analyzer",
-        "@semantic-release/release-notes-generator",
-        "@semantic-release/github",
-        "@semantic-release/git",
-        "conventional-changelog-conventionalcommits"
-      ],
-      "separateMajorMinor": true,
-      "separateMultipleMajor": true
+      "description": "Automerge safe non-major updates into develop after CI passes",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "pinDigest"],
+      "addLabels": ["safe-automerge"],
+      "automerge": true,
+      "automergeType": "pr"
     },
     {
-      "description": "Highlight major updates for semantic-release itself",
-      "matchManagers": [
-        "npm"
-      ],
-      "matchPackageNames": [
-        "semantic-release"
-      ],
-      "matchUpdateTypes": [
-        "major"
-      ],
-      "labels": [
-        "dependencies",
-        "renovate",
-        "breaking-release-tools"
-      ]
+      "description": "Require manual approval for major updates",
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["breaking-update"],
+      "automerge": false,
+      "dependencyDashboardApproval": true
     }
   ]
 }
