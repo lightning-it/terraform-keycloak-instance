@@ -21,11 +21,11 @@ Publishing targets: `terraform-registry`.
 
 ## Supported and Tested Platforms
 
-| Platform / Product | Status | Validation |
-|---|---:|---|
-| ubuntu-latest | Supported | Terraform validate |
-| terraform | Tested where applicable | Terraform validate |
-| keycloak-provider | Tested where applicable | Terraform validate |
+| Platform / Product |                  Status | Validation         |
+| ------------------ | ----------------------: | ------------------ |
+| ubuntu-latest      |               Supported | Terraform validate |
+| terraform          | Tested where applicable | Terraform validate |
+| keycloak-provider  | Tested where applicable | Terraform validate |
 
 <!-- END LIT_SHARED_RELEASE_MODEL -->
 
