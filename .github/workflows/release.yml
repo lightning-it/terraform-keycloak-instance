@@ -30,11 +30,13 @@ jobs:
     steps:
       # 1) Checkout the repository
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       # 2) Install Terraform CLI
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
           terraform_wrapper: false
           terraform_version: ${{ matrix.terraform_version }}
@@ -78,7 +80,7 @@ jobs:
     steps:
       # Checkout with full history for semantic-release
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0  # semantic-release needs full history
 
@@ -111,9 +113,10 @@ jobs:
     steps:
       # Checkout with full history to let semantic-release inspect tags/commits
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Setup Node for semantic-release
       - name: Setup Node
