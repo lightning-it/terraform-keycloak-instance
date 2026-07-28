@@ -9,7 +9,7 @@ This repository follows the Lightning IT shared release and quality model.
 - Release type: `semantic_release`
 - Artifact type: `terraform_registry_module`
 - Visibility: `public`
-- Release evidence: `enabled`
+- Release evidence: `disabled`
 - Heavy Incus release validation: `not required`
 
 ## Branch Flow
@@ -40,25 +40,6 @@ This repository follows the Lightning IT shared release and quality model.
 
 ## Release Evidence
 
-The exact `main` commit, successful Terraform matrix and TFLint jobs,
-semantic-release run, immutable version tag, generated changelog, GitHub
-Release, and Terraform Registry version form the release evidence.
-
-The registry distributes the repository source for an immutable Git tag rather
-than a built binary or container. A package SBOM is therefore not applicable.
-Terraform Registry currently provides no consumer-side signature verification
-contract for modules. Provenance/signing remains a tracked exception owned by
-`@lightning-it/ent:release`, compensated by protected release flow, full-SHA
-Actions, immutable tags, lock files, and public source review; review/expiry:
-`2026-10-31`.
-
-As of `2026-07-28`, the latest `semantic-release` transitively bundles npm
-versions affected by `GHSA-mh99-v99m-4gvg` (high) and
-`GHSA-r292-9mhp-454m` (moderate); no non-breaking upstream release resolves
-them. The tooling runs only after protected-branch checks, consumes the
-repository's fixed release configuration, and does not process user-supplied
-glob or tar input. Exception owner: `@lightning-it/ent:release`;
-review/expiry: `2026-08-31`. Renovate must replace the affected transitive
-versions as soon as semantic-release publishes a compatible fix.
+Release evidence is disabled because this repository does not publish release artifacts. Evidence records the repository name, repository type, version, tag, commit SHA, workflow run, tested matrix combinations, passed/failed/skipped jobs, built artifacts, published artifacts, changelog link, security scan result, and SBOM/provenance/signature links when available.
 
 Evidence files must not contain tokens, credentials, private inventory values, or secret material.
