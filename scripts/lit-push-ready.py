@@ -185,7 +185,10 @@ def ensure_review_safe(diff: str) -> None:
         )
     review_text = diff + "\n" + untracked_review_text()
     if any(pattern.search(review_text) for pattern in SECRET_CONTENT_PATTERNS):
-        raise RuntimeError("Copilot review refused because the planned diff contains secret-like content")
+        raise RuntimeError(
+            "Copilot review refused because the planned review input "
+            "contains secret-like content"
+        )
 
 
 def untracked_review_text(max_bytes: int = 1_000_000) -> str:
@@ -204,19 +207,21 @@ def untracked_review_text(max_bytes: int = 1_000_000) -> str:
             raise RuntimeError(
                 f"Copilot review refused for escaping untracked path: {name}"
             ) from exc
+        remaining = max_bytes - total
         try:
-            payload = path.read_bytes()
+            with path.open("rb") as stream:
+                payload = stream.read(remaining + 1)
         except OSError as exc:
             raise RuntimeError(
                 f"Copilot review could not inspect untracked path: {name}"
             ) from exc
-        total += len(payload)
-        if total > max_bytes:
+        if len(payload) > remaining:
             raise RuntimeError(
                 "Copilot review refused because untracked content exceeds "
                 f"{max_bytes} bytes"
             )
-        chunks.append(payload.decode("utf-8", errors="ignore"))
+        total += len(payload)
+        chunks.append(payload.decode("latin-1"))
     return "\n".join(chunks)
 
 
