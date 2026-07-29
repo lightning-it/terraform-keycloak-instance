@@ -248,7 +248,14 @@ def check_embedded_code() -> None:
         if path and Path(path).suffix.lower() == ".md"
     )
     if markdown_paths:
-        command_prefix = [sys.executable, "scripts/validate-embedded-code.py"]
+        validator = ROOT / "scripts" / "validate-embedded-code.py"
+        shared_validator = ROOT / "default" / "scripts" / "validate-embedded-code.py"
+        if not validator.is_file() and shared_validator.is_file():
+            validator = shared_validator
+        command_prefix = [
+            sys.executable,
+            validator.relative_to(ROOT).as_posix(),
+        ]
         batch: list[str] = []
         batch_bytes = 0
         for path in markdown_paths:
