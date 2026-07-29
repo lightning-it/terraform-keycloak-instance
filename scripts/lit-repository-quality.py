@@ -248,13 +248,19 @@ def check_embedded_code() -> None:
         if path and Path(path).suffix.lower() == ".md"
     )
     if markdown_paths:
-        run(
-            [
-                sys.executable,
-                "scripts/validate-embedded-code.py",
-                *markdown_paths,
-            ]
-        )
+        command_prefix = [sys.executable, "scripts/validate-embedded-code.py"]
+        batch: list[str] = []
+        batch_bytes = 0
+        for path in markdown_paths:
+            path_bytes = len(os.fsencode(path)) + 1
+            if batch and (len(batch) >= 100 or batch_bytes + path_bytes > 60_000):
+                run([*command_prefix, *batch])
+                batch = []
+                batch_bytes = 0
+            batch.append(path)
+            batch_bytes += path_bytes
+        if batch:
+            run([*command_prefix, *batch])
 
 
 def check_managed_assets() -> None:
