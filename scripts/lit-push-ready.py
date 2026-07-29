@@ -135,7 +135,10 @@ def execute_checks(config: dict) -> list[dict]:
             or not command
             or any(not isinstance(argument, str) for argument in command)
         ):
-            raise RuntimeError("each check requires a name and non-empty command array")
+            raise RuntimeError(
+                "each check requires a non-empty string name and "
+                "non-empty command array of strings"
+            )
         started = time.monotonic()
         print(f"==> {name}: {shlex.join(command)}", flush=True)
         result = run(command)
@@ -287,9 +290,14 @@ def copilot_review(config: dict) -> dict:
         + diff
     )
     started = time.monotonic()
-    timeout_seconds = int(
-        config.get("copilot", {}).get("timeout_seconds", 300)
-    )
+    try:
+        timeout_seconds = int(
+            config.get("copilot", {}).get("timeout_seconds", 300)
+        )
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "Copilot review timeout must be an integer between 1 and 1800 seconds"
+        ) from exc
     if timeout_seconds <= 0 or timeout_seconds > 1800:
         raise RuntimeError("Copilot review timeout must be between 1 and 1800 seconds")
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as output:

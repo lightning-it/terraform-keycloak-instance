@@ -234,8 +234,14 @@ def check_embedded_code() -> None:
         encoding="utf-8",
         errors="surrogateescape",
         capture_output=True,
-        check=True,
+        check=False,
     )
+    if result.returncode:
+        details = result.stderr.strip()
+        raise AssertionError(
+            "cannot enumerate tracked Markdown files with git ls-files"
+            + (f": {details}" if details else "")
+        )
     markdown_paths = sorted(
         path
         for path in result.stdout.split("\0")
