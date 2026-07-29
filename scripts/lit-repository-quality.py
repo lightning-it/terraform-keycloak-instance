@@ -228,7 +228,7 @@ def check_markdown() -> None:
 
 def check_embedded_code() -> None:
     result = subprocess.run(
-        ["git", "ls-files", "-z"],
+        ["git", "-c", f"safe.directory={ROOT}", "ls-files", "-z"],
         cwd=ROOT,
         text=True,
         encoding="utf-8",
