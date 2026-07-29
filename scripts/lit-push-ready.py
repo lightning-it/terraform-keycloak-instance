@@ -10,6 +10,7 @@ import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -56,16 +57,66 @@ def evidence_path() -> Path:
     return git_dir.resolve() / "lit-push-ready-evidence.json"
 
 
+def untracked_file_hashes(max_bytes: int = 100_000_000) -> dict[str, str]:
+    names = git_output("ls-files", "--others", "--exclude-standard", "-z")
+    hashes: dict[str, str] = {}
+    total = 0
+    root = ROOT.resolve()
+    for name in (entry for entry in names.split("\0") if entry):
+        path = ROOT / name
+        if path.is_symlink():
+            raise RuntimeError(f"Cannot fingerprint untracked symbolic link: {name}")
+        try:
+            resolved = path.resolve()
+            resolved.relative_to(root)
+        except (OSError, ValueError) as exc:
+            raise RuntimeError(
+                f"Cannot fingerprint escaping or unresolvable untracked path: {name}"
+            ) from exc
+        if not resolved.is_file():
+            raise RuntimeError(
+                f"Cannot fingerprint non-regular untracked path: {name}"
+            )
+        digest = hashlib.sha256()
+        descriptor = -1
+        try:
+            descriptor = os.open(
+                resolved,
+                os.O_RDONLY
+                | getattr(os, "O_NOFOLLOW", 0)
+                | getattr(os, "O_NONBLOCK", 0),
+            )
+            if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+                raise RuntimeError(
+                    f"Cannot fingerprint non-regular untracked path: {name}"
+                )
+            with os.fdopen(descriptor, "rb") as stream:
+                descriptor = -1
+                while chunk := stream.read(1024 * 1024):
+                    total += len(chunk)
+                    if total > max_bytes:
+                        raise RuntimeError(
+                            "Untracked fingerprint input exceeds "
+                            f"{max_bytes} bytes"
+                        )
+                    digest.update(chunk)
+        except OSError as exc:
+            raise RuntimeError(
+                f"Cannot read untracked path for fingerprint: {name}"
+            ) from exc
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+        hashes[name] = digest.hexdigest()
+    return hashes
+
+
 def tree_fingerprint() -> str:
-    untracked = git_output("ls-files", "--others", "--exclude-standard").splitlines()
     payload = {
         "head": git_output("rev-parse", "HEAD").strip(),
         "status": git_output("status", "--porcelain=v1", "--untracked-files=all"),
         "diff": git_output("diff", "--no-ext-diff", "--binary", "HEAD"),
-        "untracked": {
-            path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
-            for path in untracked
-        },
+        "untracked": untracked_file_hashes(),
     }
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
