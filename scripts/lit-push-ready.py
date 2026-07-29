@@ -128,8 +128,17 @@ def execute_checks(config: dict) -> list[dict]:
             raise RuntimeError("each check must be an object")
         name = check.get("name")
         command = check.get("command")
-        if not name or not isinstance(command, list) or not command:
-            raise RuntimeError("each check requires a name and non-empty command array")
+        if (
+            not isinstance(name, str)
+            or not name
+            or not isinstance(command, list)
+            or not command
+            or any(not isinstance(argument, str) for argument in command)
+        ):
+            raise RuntimeError(
+                "each check requires a non-empty string name and "
+                "non-empty command array of strings"
+            )
         started = time.monotonic()
         print(f"==> {name}: {shlex.join(command)}", flush=True)
         result = run(command)
@@ -281,24 +290,40 @@ def copilot_review(config: dict) -> dict:
         + diff
     )
     started = time.monotonic()
-    with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as output:
-        result = subprocess.run(
-            [
-                executable,
-                "-p",
-                prompt,
-                "--silent",
-                "--available-tools",
-                "view,grep,glob",
-                "--allow-tool",
-                "read",
-            ],
-            cwd=ROOT,
-            check=False,
-            text=True,
-            stdout=output,
-            stderr=subprocess.STDOUT,
+    try:
+        timeout_seconds = int(
+            config.get("copilot", {}).get("timeout_seconds", 300)
         )
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            "Copilot review timeout must be an integer between 1 and 1800 seconds"
+        ) from exc
+    if timeout_seconds <= 0 or timeout_seconds > 1800:
+        raise RuntimeError("Copilot review timeout must be between 1 and 1800 seconds")
+    with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as output:
+        try:
+            result = subprocess.run(
+                [
+                    executable,
+                    "-p",
+                    prompt,
+                    "--silent",
+                    "--available-tools",
+                    "view,grep,glob",
+                    "--allow-tool",
+                    "read",
+                ],
+                cwd=ROOT,
+                check=False,
+                text=True,
+                stdout=output,
+                stderr=subprocess.STDOUT,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(
+                f"Copilot review timed out after {timeout_seconds} seconds"
+            ) from exc
         output.seek(0)
         review = output.read()
     final_line = next((line.strip() for line in reversed(review.splitlines()) if line.strip()), "")

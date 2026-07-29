@@ -1,12 +1,9 @@
 # terraform-keycloak-instance
 
-Engineering controls follow the accepted
-[repository topology ADR](https://lit.atlassian.net/wiki/spaces/LIT/pages/2878636297),
-[branching and release governance ADR](https://lit.atlassian.net/wiki/spaces/LIT/pages/2878603438),
-[mandatory CI and artifact assurance ADR](https://lit.atlassian.net/wiki/spaces/LIT/pages/2878636340),
-[secure SDLC standard](https://lit.atlassian.net/wiki/spaces/LIT/pages/2887778335),
-[quality gates](https://lit.atlassian.net/wiki/spaces/LIT/pages/2887123058), and
-[software supply-chain assurance standard](https://lit.atlassian.net/wiki/spaces/LIT/pages/2887024876).
+Engineering controls follow the accepted repository-topology, branching and
+release-governance, mandatory-CI and artifact-assurance ADRs, together with the
+Lightning IT secure-SDLC, quality-gate, and software-supply-chain assurance
+standards. Internal knowledge-base locations are intentionally not published.
 
 <!-- BEGIN LIT_SHARED_RELEASE_MODEL -->
 
