@@ -45,8 +45,19 @@ repos:
   - repo: local
     hooks:
       - id: renovate-config-validate
-        name: renovate-config-validator (terraform-devtools)
+        name: renovate config linting (digest-pinned)
         language: system
         pass_filenames: false
         files: ^renovate\.json$
-        entry: bash -lc 'scripts/wunder-devtools-ee.sh renovate-config-validator'
+        entry: >-
+          bash -lc 'engine="${WUNDER_CONTAINER_ENGINE:-docker}";
+          if ! command -v "${engine}" >/dev/null 2>&1;
+          then echo "ERROR: container engine ${engine} is required for Renovate config validation." >&2;
+          exit 1; fi;
+          "${engine}" run --rm --read-only --network none --cap-drop ALL
+          --security-opt no-new-privileges=true --pids-limit 128
+          --security-opt label=disable
+          --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m
+          -v "$PWD/renovate.json:/repo/renovate.json:ro" -w /repo
+          docker.io/renovate/renovate:43.263.3@sha256:dbdb501ad9a2558ab8f99538b1d4be0a8768cf8c3383aaa33a35ed981dfe3464
+          renovate-config-validator --strict --no-global /repo/renovate.json'

@@ -1,78 +1,92 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
-  ],
-  "dependencyDashboard": true,
-  "timezone": "UTC",
-  "schedule": [
-    "before 6am on Friday"
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":semanticCommitType(chore)",
+    ":semanticCommitScope(deps)"
   ],
   "labels": [
     "dependencies",
     "renovate"
   ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "^\\.github/workflows/terraform-module\\.yml$"
-      ],
-      "matchStrings": [
-        "terraform_version: \\[\"(?<currentVersion1>[0-9.]+)\", \"(?<currentVersion2>[0-9.]+)\"\\]"
-      ],
-      "datasourceTemplate": "terraform-version",
-      "depNameTemplate": "hashicorp/terraform",
-      "currentValueTemplate": "{{currentVersion1}}"
-    },
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "^\\.github/workflows/release\\.yml$"
-      ],
-      "matchStrings": [
-        "node-version: ['\"]?(?<currentValue>[0-9.]+)['\"]?"
-      ],
-      "datasourceTemplate": "node",
-      "depNameTemplate": "node",
-      "versioningTemplate": "node"
-    }
+  "baseBranchPatterns": [
+    "develop"
   ],
+  "timezone": "UTC",
+  "schedule": [],
+  "rebaseWhen": "behind-base-branch",
+  "prConcurrentLimit": 5,
   "packageRules": [
     {
-      "groupName": "semantic-release toolchain",
-      "description": "Keep semantic-release and its plugins in sync",
+      "description": "Do not update Renovate configuration presets as dependencies",
       "matchManagers": [
-        "npm"
+        "renovate-config"
       ],
-      "matchPackageNames": [
-        "semantic-release",
-        "@semantic-release/changelog",
-        "@semantic-release/commit-analyzer",
-        "@semantic-release/release-notes-generator",
-        "@semantic-release/github",
-        "@semantic-release/git",
-        "conventional-changelog-conventionalcommits"
-      ],
-      "separateMajorMinor": true,
-      "separateMultipleMajor": true
+      "enabled": false
     },
     {
-      "description": "Highlight major updates for semantic-release itself",
-      "matchManagers": [
-        "npm"
+      "description": "Automerge safe non-major updates into develop after CI passes",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest",
+        "pinDigest",
+        "lockFileMaintenance"
       ],
-      "matchPackageNames": [
-        "semantic-release"
+      "addLabels": [
+        "safe-automerge"
       ],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Require manual approval for major updates",
       "matchUpdateTypes": [
         "major"
       ],
-      "labels": [
-        "dependencies",
-        "renovate",
-        "breaking-release-tools"
-      ]
+      "addLabels": [
+        "breaking-update"
+      ],
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Keep every component of the GitHub Actions toolchain on one version",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Keep collection validation on its tested Python runtime",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchFileNames": [
+        ".github/workflows/collection-quality-profile.yml"
+      ],
+      "matchDepNames": [
+        "python"
+      ],
+      "allowedVersions": "/^3\\.11(?:\\.\\d+)?$/",
+      "groupName": "python 3.11 lockfile runtimes"
+    },
+    {
+      "description": "Keep repository checks aligned with their lockfile",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchFileNames": [
+        ".github/workflows/repository-quality.yml"
+      ],
+      "matchDepNames": [
+        "python"
+      ],
+      "allowedVersions": "/^3\\.14(?:\\.\\d+)?$/",
+      "groupName": "python 3.14 lockfile runtimes"
     }
   ]
 }
