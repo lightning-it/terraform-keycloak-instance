@@ -226,6 +226,25 @@ def check_markdown() -> None:
             raise AssertionError(f"{path.name} must end with a newline")
 
 
+def check_embedded_code() -> None:
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "--", "*.md"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    markdown_paths = sorted(path for path in result.stdout.split("\0") if path)
+    if markdown_paths:
+        run(
+            [
+                sys.executable,
+                "scripts/validate-embedded-code.py",
+                *markdown_paths,
+            ]
+        )
+
+
 def check_managed_assets() -> None:
     """Verify the optional repository-specific provenance inventory."""
     inventory_path = ROOT / ".lit" / "managed-assets.json"
@@ -341,6 +360,7 @@ def main() -> int:
         check_generated_docs(meta)
         check_secret_safe_generated_docs()
         check_markdown()
+        check_embedded_code()
         check_managed_assets()
         repo_type = meta.get("repository_type", "")
         check_terraform(repo_type)
