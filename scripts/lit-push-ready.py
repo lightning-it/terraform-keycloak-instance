@@ -240,14 +240,19 @@ def execute_checks(config: dict) -> list[dict]:
                 "each check requires a non-empty string name and "
                 "non-empty command array of strings"
             )
+        runtime_command = (
+            [sys.executable, *command[1:]]
+            if command[0] in {"python", "python3"}
+            else command
+        )
         started = time.monotonic()
-        print(f"==> {name}: {shlex.join(command)}", flush=True)
-        result = run(command)
+        print(f"==> {name}: {shlex.join(runtime_command)}", flush=True)
+        result = run(runtime_command)
         elapsed = round(time.monotonic() - started, 3)
         results.append(
             {
                 "name": name,
-                "command": command,
+                "command": runtime_command,
                 "exit_code": result.returncode,
                 "duration_seconds": elapsed,
             }
@@ -398,16 +403,11 @@ def copilot_review(config: dict) -> dict:
     )
     started = time.monotonic()
     raw_timeout = config.get("copilot", {}).get("timeout_seconds", 300)
-    if isinstance(raw_timeout, bool):
+    if isinstance(raw_timeout, bool) or not isinstance(raw_timeout, int):
         raise RuntimeError(
             "Copilot review timeout must be an integer between 1 and 1800 seconds"
         )
-    try:
-        timeout_seconds = int(raw_timeout)
-    except (TypeError, ValueError) as exc:
-        raise RuntimeError(
-            "Copilot review timeout must be an integer between 1 and 1800 seconds"
-        ) from exc
+    timeout_seconds = raw_timeout
     if timeout_seconds <= 0 or timeout_seconds > 1800:
         raise RuntimeError("Copilot review timeout must be between 1 and 1800 seconds")
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as output:
