@@ -124,6 +124,17 @@ def check_generated_docs(meta: dict[str, str]) -> None:
         raise AssertionError("RELEASE.md does not include the repository type")
     if "Release Evidence" not in release:
         raise AssertionError("RELEASE.md does not describe release evidence")
+    if meta.get("repository_type", "") == "container_image":
+        for asset in [
+            "release-evidence.json",
+            "release-evidence.md",
+            "release-provenance.intoto.jsonl",
+            "sbom.cdx.json",
+            "SHA256SUMS",
+            "SHA256SUMS.sigstore.json",
+        ]:
+            if f"`{asset}`" not in release:
+                raise AssertionError(f"RELEASE.md does not list required release asset {asset}")
     if "Test Profiles" not in testing:
         raise AssertionError("TESTING.md does not describe test profiles")
     for term in ["OpenSSF Readiness", "Scorecard", "Best Practices Badge", "Security Policy"]:
@@ -248,7 +259,14 @@ def check_embedded_code() -> None:
         if path and Path(path).suffix.lower() == ".md"
     )
     if markdown_paths:
-        command_prefix = [sys.executable, "scripts/validate-embedded-code.py"]
+        validator = ROOT / "scripts" / "validate-embedded-code.py"
+        shared_validator = ROOT / "default" / "scripts" / "validate-embedded-code.py"
+        if not validator.is_file() and shared_validator.is_file():
+            validator = shared_validator
+        command_prefix = [
+            sys.executable,
+            validator.relative_to(ROOT).as_posix(),
+        ]
         batch: list[str] = []
         batch_bytes = 0
         for path in markdown_paths:
