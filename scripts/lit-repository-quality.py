@@ -9,6 +9,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -221,16 +222,54 @@ def check_terraform(repo_type: str) -> None:
         for validation_root in validation_roots:
             relative_root = validation_root.relative_to(ROOT)
             chdir = "." if relative_root == Path(".") else relative_root.as_posix()
-            run(
-                [
-                    "terraform",
-                    f"-chdir={chdir}",
-                    "init",
-                    "-backend=false",
-                    "-input=false",
-                ]
+            # The canonical profile runs inside a read-only source checkout.
+            # Terraform normally creates .terraform below the validation root,
+            # so keep its transient data outside the repository instead. The
+            # managed Devtool mounts HOME as a fresh executable tmpfs because
+            # downloaded provider binaries must be executable during validate.
+            terraform_home = os.environ.get("HOME", "")
+            terraform_temp_parent = Path(terraform_home)
+            resolved_temp_parent = (
+                terraform_temp_parent.resolve()
+                if terraform_home and terraform_temp_parent.is_absolute()
+                else terraform_temp_parent
             )
-            run(["terraform", f"-chdir={chdir}", "validate", "-no-color"])
+            resolved_root = ROOT.resolve()
+            if (
+                not terraform_home
+                or not terraform_temp_parent.is_absolute()
+                or not terraform_temp_parent.is_dir()
+                or terraform_temp_parent.is_symlink()
+                or resolved_temp_parent == resolved_root
+                or resolved_root in resolved_temp_parent.parents
+            ):
+                raise AssertionError(
+                    "Terraform validation requires an absolute, existing, "
+                    "non-symlink HOME outside the repository for executable "
+                    "temporary data"
+                )
+            with tempfile.TemporaryDirectory(
+                prefix="lit-terraform-",
+                dir=resolved_temp_parent,
+            ) as data_dir:
+                previous_data_dir = os.environ.get("TF_DATA_DIR")
+                os.environ["TF_DATA_DIR"] = data_dir
+                try:
+                    run(
+                        [
+                            "terraform",
+                            f"-chdir={chdir}",
+                            "init",
+                            "-backend=false",
+                            "-input=false",
+                        ]
+                    )
+                    run(["terraform", f"-chdir={chdir}", "validate", "-no-color"])
+                finally:
+                    if previous_data_dir is None:
+                        os.environ.pop("TF_DATA_DIR", None)
+                    else:
+                        os.environ["TF_DATA_DIR"] = previous_data_dir
     else:
         print("Terraform CLI not installed; checked Terraform file presence only")
 
