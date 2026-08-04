@@ -62,8 +62,6 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          branch='chore/sync-main-to-develop'
-          title='chore: sync main back to develop'
           token_header="$(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 -w0)"
           echo "::add-mask::${token_header}"
 
@@ -72,6 +70,10 @@ jobs:
           git remote add origin "https://github.com/${REPOSITORY}.git"
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${token_header}" \
             fetch --quiet --no-tags origin main develop
+          main_short="$(git rev-parse --short=12 origin/main)"
+          develop_short="$(git rev-parse --short=12 origin/develop)"
+          branch="backmerge/shared-assets-${main_short}-${develop_short}-main"
+          title="chore(governance): record main ancestry before ${main_short}"
           git config user.name lightning-it-release-automation[bot]
           git config user.email "${BOT_EMAIL}"
           if git merge-base --is-ancestor origin/main origin/develop; then
