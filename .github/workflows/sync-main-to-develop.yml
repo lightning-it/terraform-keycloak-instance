@@ -85,7 +85,11 @@ jobs:
           fi
 
           git switch --create "${branch}" origin/develop
-          git merge --no-ff --strategy=ours origin/main \
+          # Bind the merge object to an existing Git timestamp so a retry after
+          # the branch push (but before PR creation) recreates the exact SHA.
+          merge_date="$(git show -s --format=%cI origin/main)"
+          GIT_AUTHOR_DATE="${merge_date}" GIT_COMMITTER_DATE="${merge_date}" \
+            git merge --no-ff --strategy=ours origin/main \
             --message 'merge: preserve develop tree and main ancestry'
           git merge-base --is-ancestor origin/main HEAD
           git merge-base --is-ancestor origin/develop HEAD
@@ -96,11 +100,12 @@ jobs:
               ls-remote --heads origin "refs/heads/${branch}" | awk '{print $1}'
           )"
           if [ -n "${remote_head}" ]; then
-            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${token_header}" \
-              push \
-              --force-with-lease="refs/heads/${branch}:${remote_head}" \
-              origin \
-              "HEAD:refs/heads/${branch}"
+            local_head="$(git rev-parse HEAD)"
+            if [ "${remote_head}" != "${local_head}" ]; then
+              echo "::error::Backmerge branch collision; refusing to overwrite existing history."
+              exit 1
+            fi
+            echo 'Exact backmerge branch already exists; no push required.'
           else
             # A normal first push is race-safe: it cannot overwrite non-fast-forward
             # history if another actor creates or updates the branch after ls-remote.
