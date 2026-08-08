@@ -154,9 +154,11 @@ jobs:
           case "${auto_merge_enabled}" in
             true) ;;
             false)
-              # shellcheck disable=SC2016  # GraphQL variables are expanded by GitHub.
+              query="mutation(\$pr:ID!){enablePullRequestAutoMerge("
+              query+="input:{pullRequestId:\$pr,mergeMethod:MERGE}){"
+              query+="pullRequest{autoMergeRequest{enabledAt}}}}"
               gh api graphql \
-                -f query='mutation($pr:ID!){enablePullRequestAutoMerge(input:{pullRequestId:$pr,mergeMethod:MERGE}){pullRequest{autoMergeRequest{enabledAt}}}}' \
+                -f query="${query}" \
                 -f pr="${pr_id}" \
                 --jq '.data.enablePullRequestAutoMerge.pullRequest.autoMergeRequest != null' \
                 | grep -qx true
