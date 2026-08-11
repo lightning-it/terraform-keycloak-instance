@@ -941,10 +941,15 @@ def minimal_check_environment(state_root: Path) -> dict[str, str]:
     temporary.mkdir(mode=0o700)
     environment = {
         "CI": "1",
+        # Checks run in a disposable PR-merge worktree.  They must never
+        # wait for an interactive pager when the caller has a TTY.
+        "GIT_PAGER": "cat",
+        "GIT_TERMINAL_PROMPT": "0",
         "HOME": str(home),
         "LANG": "C",
         "LC_ALL": "C",
         "PATH": path_value,
+        "PAGER": "cat",
         "TMPDIR": str(temporary),
     }
     selected_engine = os.environ.get("WUNDER_CONTAINER_ENGINE")
@@ -1086,6 +1091,7 @@ def expected_integration_tree(change: PlannedChange) -> str:
             worktree,
             purpose="compatibility merge worktree",
         )
+        merge_completed = False
         try:
             refreshed = run(
                 [
@@ -1129,6 +1135,7 @@ def expected_integration_tree(change: PlannedChange) -> str:
                     f"authoritative base {change.base_tip}: "
                     f"{merged.stdout.strip()}"
                 )
+            merge_completed = True
             tree = git_output_at(worktree, "write-tree").strip()
             if not is_full_git_object_id(tree):
                 raise RuntimeError("Git returned an invalid integration tree")
@@ -1151,6 +1158,24 @@ def expected_integration_tree(change: PlannedChange) -> str:
                     cwd=worktree,
                 )
                 if merge_head.returncode == 0:
+                    if merge_completed:
+                        refreshed = run(
+                            [
+                                "git",
+                                "-c",
+                                f"core.hooksPath={disabled_hooks}",
+                                "update-index",
+                                "--refresh",
+                            ],
+                            capture=True,
+                            cwd=worktree,
+                        )
+                        if refreshed.returncode:
+                            raise RuntimeError(
+                                "could not refresh the compatibility merge "
+                                "worktree index before cleanup: "
+                                + refreshed.stdout.strip()
+                            )
                     aborted = run(
                         [
                             "git",
