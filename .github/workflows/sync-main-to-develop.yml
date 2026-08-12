@@ -39,16 +39,27 @@ jobs:
         env:
           APP_SLUG: ${{ steps.release-app.outputs.app-slug }}
           GH_TOKEN: ${{ steps.release-app.outputs.token }}
+          APP_INSTALLATION_ID: ${{ steps.release-app.outputs.installation-id }}
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           test "${APP_SLUG}" = "lightning-it-release-automation"
+          test "${APP_INSTALLATION_ID}" = "148019054"
           installations="$(
             gh api --paginate --slurp \
               "installation/repositories?per_page=100"
           )"
+          # GH_TOKEN is the downscoped token minted above. This endpoint returns
+          # repositories visible to that token, not the App installation's full
+          # organization-wide repository selection.
+          # shellcheck disable=SC2016  # jq variables must not expand in the shell.
+          repository_filter='
+            [.[].repositories[]?] as $repositories
+            | (($repositories | length) == 1
+               and $repositories[0].full_name == $repository)
+          '
           jq -e --arg repository "${REPOSITORY}" \
-            'any(.[].repositories[]?; .full_name == $repository)' \
+            "${repository_filter}" \
             <<<"${installations}" >/dev/null
           login="$(gh api "users/lightning-it-release-automation%5Bbot%5D" --jq .login)"
           bot_id="$(gh api "users/lightning-it-release-automation%5Bbot%5D" --jq .id)"
@@ -75,7 +86,8 @@ jobs:
             fetch --quiet --no-tags origin main develop
           main_short="$(git rev-parse --short=12 origin/main)"
           develop_short="$(git rev-parse --short=12 origin/develop)"
-          branch="backmerge/shared-assets-${main_short}-${develop_short}-main"
+          repository_name="${REPOSITORY#*/}"
+          branch="backmerge/${repository_name}-${main_short}-${develop_short}-main"
           title="chore(governance): record main ancestry before ${main_short}"
           git config user.name lightning-it-release-automation[bot]
           git config user.email "${BOT_EMAIL}"
@@ -85,8 +97,8 @@ jobs:
           fi
 
           git switch --create "${branch}" origin/develop
-          # Bind the merge object to an existing Git timestamp so a retry after
-          # the branch push (but before PR creation) recreates the exact SHA.
+          # Bind the merge object to an existing Git timestamp so retries
+          # reproduce the exact same commit and never require a force-update.
           merge_date="$(git show -s --format=%cI origin/main)"
           GIT_AUTHOR_DATE="${merge_date}" GIT_COMMITTER_DATE="${merge_date}" \
             git merge --no-ff --strategy=ours origin/main \
@@ -95,25 +107,40 @@ jobs:
           git merge-base --is-ancestor origin/develop HEAD
           [ "$(git rev-list --parents -n 1 HEAD | wc -w)" -eq 3 ]
           git diff --quiet origin/develop HEAD
-          remote_head="$(
-            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${token_header}" \
-              ls-remote --heads origin "refs/heads/${branch}" | awk '{print $1}'
-          )"
-          if [ -n "${remote_head}" ]; then
-            local_head="$(git rev-parse HEAD)"
-            if [ "${remote_head}" != "${local_head}" ]; then
-              echo "::error::Backmerge branch collision; refusing to overwrite existing history."
-              exit 1
-            fi
-            echo 'Exact backmerge branch already exists; no push required.'
-          else
-            # A normal first push is race-safe: it cannot overwrite non-fast-forward
-            # history if another actor creates or updates the branch after ls-remote.
-            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${token_header}" \
+          create_backmerge_branch() {
+            local branch_name="$1"
+            local desired_head="$2"
+            local remote_head
+
+            if git \
+              -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${token_header}" \
               push \
+              --force-with-lease="refs/heads/${branch_name}:" \
               origin \
-              "HEAD:refs/heads/${branch}"
-          fi
+              "${desired_head}:refs/heads/${branch_name}"; then
+              echo 'Created exact backmerge branch with a create-only lease.'
+              return 0
+            fi
+
+            if ! remote_head="$(
+              git \
+                -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${token_header}" \
+                ls-remote --exit-code --heads \
+                origin "refs/heads/${branch_name}" \
+                | awk '{print $1}'
+            )"; then
+              echo "::error::Unable to create or verify the backmerge branch."
+              return 1
+            fi
+            if [ "${remote_head}" != "${desired_head}" ]; then
+              echo "::error::Backmerge branch collision; refusing to overwrite existing history."
+              return 1
+            fi
+            echo 'Exact backmerge branch already exists; no update required.'
+          }
+
+          local_head="$(git rev-parse HEAD)"
+          create_backmerge_branch "${branch}" "${local_head}"
 
           pr_number="$(
             gh api --method GET "repos/${REPOSITORY}/pulls" \
@@ -134,17 +161,24 @@ jobs:
             pr_number="${pr_url##*/}"
           fi
 
-          gh pr view "${pr_number}" \
+          pr_details="$(gh pr view "${pr_number}" \
             --repo "${REPOSITORY}" \
-            --json author,baseRefName,headRefName,headRepositoryOwner,title \
-          | jq -e \
+            --json author,baseRefName,headRefName,headRefOid,headRepositoryOwner,title)"
+          # shellcheck disable=SC2016  # jq variables must not expand in the shell.
+          pr_filter='
+            .author.login == "app/lightning-it-release-automation"
+            and .baseRefName == "develop"
+            and .headRefName == $branch
+            and .headRefOid == $expected_head
+            and .headRepositoryOwner.login == "lightning-it"
+            and .title == $title
+          '
+          jq -e \
               --arg branch "${branch}" \
+              --arg expected_head "${local_head}" \
               --arg title "${title}" \
-              '.author.login == "app/lightning-it-release-automation"
-               and .baseRefName == "develop"
-               and .headRefName == $branch
-               and .headRepositoryOwner.login == "lightning-it"
-               and .title == $title' \
+              "${pr_filter}" \
+              <<<"${pr_details}" \
             | grep -qx true
           pr_id="$(gh pr view "${pr_number}" --repo "${REPOSITORY}" --json id --jq .id)"
           auto_merge_enabled="$(
