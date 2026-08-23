@@ -62,6 +62,7 @@
         ".github/workflows/copilot-review.yml",
         ".github/workflows/current-revision-rerun.yml",
         ".github/workflows/openssf-scorecard.yml",
+        ".github/workflows/promote-develop-to-main.yml",
         ".github/workflows/release-bot-exact-head-review.yml",
         ".github/workflows/renovate-guarded-automerge.yml",
         ".github/workflows/repository-quality.yml",
